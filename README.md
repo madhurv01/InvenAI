@@ -35,31 +35,50 @@ The seed script creates a default login:
 
 ## 2. Configure and run the backend (Visual Studio)
 
-**Requirements:** .NET 8 SDK, Visual Studio 2022 Community (or `dotnet` CLI).
+**Requirements:** .NET 8 SDK (the runtime alone isn't enough — `dotnet build`/`dotnet run` need the SDK; grab it from https://dotnet.microsoft.com/download if `dotnet --version` fails), Visual Studio 2022 Community (or the `dotnet` CLI).
 
-1. Open `backend/InventoryApi/InventoryApi.csproj` in Visual Studio (or `cd backend/InventoryApi`).
-2. Edit `appsettings.json`:
+Open the solution via **`backend/InventoryApi.sln`** (not the folder, and not the bare `.csproj`) — that's what gives Visual Studio a startup project to run/debug with F5.
+
+### Supabase connection: use the pooler, not the direct host
+
+Supabase's **direct** connection (`db.<project-ref>.supabase.co:5432`) is frequently unreachable from restrictive networks/firewalls — many ISPs block outbound port 5432 outright. Use the **Transaction pooler** instead: Supabase dashboard → **Project Settings → Database → Connection string → Transaction pooler** (port `6543`, host like `aws-0-<region>.pooler.supabase.com`, username `postgres.<project-ref>`).
+
+The pooler also requires two extra Npgsql flags — PgBouncer's transaction mode doesn't support prepared statements, and Npgsql auto-prepares by default, which causes intermittent `"An exception has been raised that is likely due to a transient failure"` errors on some queries otherwise:
+
+```
+Max Auto Prepare=0;No Reset On Close=true
+```
+
+### Secrets: two appsettings files, only one is committed
+
+- **`appsettings.json`** (committed to git) holds only placeholder values — safe as a template.
+- **`appsettings.Development.json`** (git-ignored — see `.gitignore`) holds your real DB password, JWT secret, and Anthropic API key. ASP.NET Core automatically layers this over `appsettings.json` when `ASPNETCORE_ENVIRONMENT=Development`, which is the profile set up in `Properties/launchSettings.json`.
+
+Create `appsettings.Development.json` next to `appsettings.json` (it won't exist on a fresh clone, since it's git-ignored) with:
 
 ```json
-"ConnectionStrings": {
-  "SupabaseConnection": "Host=YOUR-PROJECT-REF.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=YOUR-DB-PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
-},
-"Jwt": {
-  "SecretKey": "REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
-},
-"Anthropic": {
-  "ApiKey": "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY"
+{
+  "ConnectionStrings": {
+    "SupabaseConnection": "Host=aws-0-<region>.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.<project-ref>;Password=YOUR-DB-PASSWORD;SSL Mode=Require;Trust Server Certificate=true;Max Auto Prepare=0;No Reset On Close=true"
+  },
+  "Jwt": {
+    "SecretKey": "REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
+  },
+  "Anthropic": {
+    "ApiKey": "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY"
+  }
 }
 ```
 
-- **SupabaseConnection**: from Supabase → Project Settings → Database → Connection string (URI or "Session pooler" also works — just map the fields into the Npgsql format above).
 - **Jwt:SecretKey**: any long random string (32+ characters). Used to sign login tokens.
 - **Anthropic:ApiKey**: your Claude API key from https://console.anthropic.com. If you leave this as the placeholder, the AI Assistant still works — it falls back to a deterministic, rule-based summary generated from the same real Supabase data, so the feature is functional even before you add a key.
 
-3. Restore & run:
-   - In Visual Studio: press **F5** (or `Ctrl+F5`).
-   - Or via CLI: `dotnet restore && dotnet run`.
-4. The API starts on `https://localhost:7080` (check the exact port in the console output / `Properties/launchSettings.json` if you generate one). Swagger UI is available at `/swagger` in development mode.
+### Run
+
+- In Visual Studio: pick the **http** launch profile from the dropdown (not "IIS Express") and press **F5** (or `Ctrl+F5`).
+- Or via CLI: `cd backend/InventoryApi && dotnet run`.
+
+The API listens on **`http://localhost:5000`** (see `Properties/launchSettings.json`). It does **not** auto-open a browser tab — Swagger UI is still available at `http://localhost:5000/swagger` in development mode if you want to browse/test endpoints manually, it's just not launched for you automatically.
 
 The app uses EF Core against your Supabase Postgres — no local database is needed. Tables must already exist (from step 1); EF Core does **not** auto-create them, by design, so schema stays fully controlled via SQL scripts.
 
@@ -82,7 +101,7 @@ npm install
 ```ts
 export const environment = {
   production: false,
-  apiUrl: 'https://localhost:7080/api'   // match your backend's actual port
+  apiUrl: 'http://localhost:5000/api'   // match your backend's actual port (see Properties/launchSettings.json)
 };
 ```
 
@@ -93,8 +112,6 @@ npm start
 ```
 
 5. Open `http://localhost:4200`. Log in with the seeded admin account, or register a new user.
-
-> If the browser blocks the API call due to the backend's self-signed HTTPS dev certificate, run `dotnet dev-certs https --trust` once, or temporarily switch the backend to `http://localhost:5080` and update `environment.ts` to match (also update `Cors:AllowedOrigins` and remove `app.UseHttpsRedirection()` if you do this).
 
 ---
 
@@ -174,3 +191,11 @@ features/
 - CORS is locked to the origins listed in `Cors:AllowedOrigins` (defaults to `http://localhost:4200`).
 - Angular never talks to Supabase directly — every request goes through the .NET API, which is also the only place the Supabase connection string and the Anthropic API key ever live.
 - Change the seeded admin password (or delete that row) before using this anywhere beyond local development.
+
+---
+
+## 8. Git workflow
+
+- **`main`** — starts as an empty commit (no code) and only receives changes via merged pull requests from feature branches. Never commit directly to it.
+- **`Webdevelopment`** — the active development branch; all work happens here (and future feature branches should branch off it) before being merged into `main` via a PR.
+- `appsettings.Development.json` is git-ignored on purpose — every clone needs its own copy created locally (see section 2) since it holds real credentials.
