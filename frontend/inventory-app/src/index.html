@@ -8,6 +8,19 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      // Set the sidebar/background theme before first paint to avoid a flash of the wrong theme.
+      var theme = localStorage.getItem('invenai-sidebar-theme') || 'midnight';
+      document.documentElement.setAttribute('data-sidebar-theme', theme);
+      var images = { midnight: 'lightnavy-bg', emerald: 'lightgreen-bg', rosegold: 'lightpink-bg', royalslate: 'lightblue-bg' };
+      var link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = '/assets/images/' + (images[theme] || images.midnight) + '.webp';
+      document.head.appendChild(link);
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

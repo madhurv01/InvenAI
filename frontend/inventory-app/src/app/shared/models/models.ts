@@ -27,6 +27,22 @@ export interface CreateProductRequest {
 export interface Category {
   id: string;
   name: string;
+  description?: string | null;
+  productCount: number;
+  createdAt: string;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  description?: string | null;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export interface Supplier {
@@ -55,6 +71,19 @@ export interface Warehouse {
   id: string;
   name: string;
   location?: string | null;
+}
+
+export interface WarehouseManage extends Warehouse {
+  isActive: boolean;
+  productCount: number;
+  totalUnits: number;
+  createdAt: string;
+}
+
+export interface CreateWarehouseRequest {
+  name: string;
+  location?: string | null;
+  isActive: boolean;
 }
 
 export interface InventoryItem {
@@ -108,6 +137,32 @@ export interface DashboardSummary {
   lowStockProducts: InventoryItem[];
   recentMovements: StockMovement[];
   categoryBreakdown: CategoryBreakdown[];
+}
+
+export interface WarehouseHeatmapCell {
+  warehouseName: string;
+  categoryName: string;
+  quantityOnHand: number;
+}
+
+export interface MovementTrendPoint {
+  date: string;
+  stockIn: number;
+  stockOut: number;
+  adjustments: number;
+}
+
+export interface StockStatusBreakdown {
+  inStock: number;
+  lowStock: number;
+  outOfStock: number;
+}
+
+export interface DashboardAnalytics {
+  heatmap: WarehouseHeatmapCell[];
+  movementTrend: MovementTrendPoint[];
+  stockStatus: StockStatusBreakdown;
+  topValueCategories: CategoryBreakdown[];
 }
 
 export interface AiChatMessage {

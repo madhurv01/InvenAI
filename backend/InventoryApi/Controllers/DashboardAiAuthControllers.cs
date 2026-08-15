@@ -23,6 +23,13 @@ public class DashboardController : ControllerBase
     {
         return Ok(await _dashboardService.GetSummaryAsync());
     }
+
+    /// <summary>Warehouse x category stock heatmap, 14-day movement trend, stock status breakdown, top-value categories.</summary>
+    [HttpGet("analytics")]
+    public async Task<ActionResult<DashboardAnalyticsDto>> GetAnalytics()
+    {
+        return Ok(await _dashboardService.GetAnalyticsAsync());
+    }
 }
 
 [ApiController]

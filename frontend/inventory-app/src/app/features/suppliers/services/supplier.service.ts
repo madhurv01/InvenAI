@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { CreateSupplierRequest, Supplier } from '../../../shared/models/models';
+import { CreateSupplierRequest, PagedResult, Supplier } from '../../../shared/models/models';
 
 @Injectable({ providedIn: 'root' })
 export class SupplierService {
   constructor(private api: ApiService) {}
 
-  getAll(search?: string): Observable<Supplier[]> {
-    return this.api.get<Supplier[]>('/suppliers', { search });
+  getAll(search?: string, page = 1, pageSize = 20): Observable<PagedResult<Supplier>> {
+    return this.api.get<PagedResult<Supplier>>('/suppliers', { search, page, pageSize });
   }
 
   getById(id: string): Observable<Supplier> {

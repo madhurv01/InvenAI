@@ -11,7 +11,7 @@ import { SupplierFormComponent } from './supplier-form.component';
   standalone: true,
   imports: [CommonModule, FormsModule, LoadingSpinnerComponent, SupplierFormComponent],
   template: `
-    <div class="page-header">
+    <div class="page-header fade-in">
       <div>
         <h1>Suppliers</h1>
         <p style="color: var(--color-text-muted); margin:0;">Manage supplier relationships and lead times.</p>
@@ -19,46 +19,58 @@ import { SupplierFormComponent } from './supplier-form.component';
       <button class="btn btn-primary" (click)="openCreate()">+ New Supplier</button>
     </div>
 
-    <div class="toolbar card">
+    <div class="toolbar card fade-in">
       <input class="form-control" style="max-width:320px" placeholder="Search by name or email…"
              [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+      <span style="color: var(--color-text-muted); font-size: 13px;">{{ totalCount() }} total</span>
     </div>
 
     <app-loading-spinner *ngIf="loading()"></app-loading-spinner>
     <div class="alert alert-danger" *ngIf="errorMessage()">{{ errorMessage() }}</div>
 
-    <div class="card" *ngIf="!loading()">
+    <div class="card slide-up" *ngIf="!loading()">
       <div class="empty-state" *ngIf="suppliers().length === 0">No suppliers found.</div>
 
-      <table class="data-table" *ngIf="suppliers().length > 0">
-        <thead>
-          <tr>
-            <th>Name</th><th>Contact</th><th>Email</th><th>Phone</th>
-            <th>Lead Time</th><th>Products</th><th>Status</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let s of suppliers()">
-            <td>{{ s.name }}</td>
-            <td>{{ s.contactPerson || '—' }}</td>
-            <td>{{ s.email || '—' }}</td>
-            <td>{{ s.phone || '—' }}</td>
-            <td>{{ s.leadTimeDays }} days</td>
-            <td>{{ s.associatedProductCount }}</td>
-            <td>
-              <span class="badge" [class.badge-success]="s.isActive" [class.badge-neutral]="!s.isActive">
-                {{ s.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-secondary btn-sm" (click)="openEdit(s)">Edit</button>
-                <button class="btn btn-danger btn-sm" (click)="confirmDelete(s)">Delete</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div style="overflow-x:auto" *ngIf="suppliers().length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th><th>Contact</th><th>Email</th><th>Phone</th>
+              <th>Lead Time</th><th>Products</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody class="stagger">
+            <tr *ngFor="let s of suppliers()">
+              <td><strong>{{ s.name }}</strong></td>
+              <td>{{ s.contactPerson || '—' }}</td>
+              <td>{{ s.email || '—' }}</td>
+              <td>{{ s.phone || '—' }}</td>
+              <td>{{ s.leadTimeDays }} days</td>
+              <td>{{ s.associatedProductCount }}</td>
+              <td>
+                <span class="badge" [class.badge-success]="s.isActive" [class.badge-neutral]="!s.isActive">
+                  {{ s.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-secondary btn-sm" (click)="openEdit(s)">Edit</button>
+                  <button class="btn btn-danger btn-sm" (click)="confirmDelete(s)">Delete</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-pagination" *ngIf="totalPages() > 1">
+        <span>Page {{ page() }} of {{ totalPages() }}</span>
+        <div class="pages">
+          <button class="page-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">‹</button>
+          <button *ngFor="let p of pageNumbers()" class="page-btn" [class.active]="p === page()" (click)="goToPage(p)">{{ p }}</button>
+          <button class="page-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">›</button>
+        </div>
+      </div>
     </div>
 
     <app-supplier-form
@@ -69,7 +81,7 @@ import { SupplierFormComponent } from './supplier-form.component';
     </app-supplier-form>
 
     <div class="modal-backdrop" *ngIf="deletingSupplier()" (click)="deletingSupplier.set(null)">
-      <div class="modal-card card" (click)="$event.stopPropagation()">
+      <div class="modal-card card scale-in" (click)="$event.stopPropagation()">
         <h3>Delete "{{ deletingSupplier()?.name }}"?</h3>
         <p style="color:var(--color-text-muted)">Suppliers linked to products cannot be deleted until reassigned.</p>
         <div class="modal-actions">
@@ -94,6 +106,11 @@ export class SupplierListComponent implements OnInit {
   errorMessage = signal('');
   search = '';
 
+  page = signal(1);
+  pageSize = 10;
+  totalCount = signal(0);
+  totalPages = signal(1);
+
   showForm = signal(false);
   editingSupplier = signal<Supplier | null>(null);
   deletingSupplier = signal<Supplier | null>(null);
@@ -108,9 +125,11 @@ export class SupplierListComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.supplierService.getAll(this.search || undefined).subscribe({
-      next: (data) => {
-        this.suppliers.set(data);
+    this.supplierService.getAll(this.search || undefined, this.page(), this.pageSize).subscribe({
+      next: (result) => {
+        this.suppliers.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.totalPages.set(result.totalPages || 1);
         this.loading.set(false);
       },
       error: (err) => {
@@ -120,9 +139,22 @@ export class SupplierListComponent implements OnInit {
     });
   }
 
+  pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages() }, (_, i) => i + 1);
+  }
+
+  goToPage(p: number): void {
+    if (p < 1 || p > this.totalPages()) return;
+    this.page.set(p);
+    this.load();
+  }
+
   onFilterChange(): void {
     clearTimeout(this.filterTimeout);
-    this.filterTimeout = setTimeout(() => this.load(), 300);
+    this.filterTimeout = setTimeout(() => {
+      this.page.set(1);
+      this.load();
+    }, 300);
   }
 
   openCreate(): void {
