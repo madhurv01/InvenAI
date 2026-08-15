@@ -12,7 +12,7 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
   standalone: true,
   imports: [CommonModule, FormsModule, LoadingSpinnerComponent, StockMovementFormComponent],
   template: `
-    <div class="page-header">
+    <div class="page-header fade-in">
       <div>
         <h1>Inventory &amp; Stock</h1>
         <p style="color: var(--color-text-muted); margin:0;">Track stock levels and movement history across warehouses.</p>
@@ -20,12 +20,12 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
       <button class="btn btn-primary" (click)="showMovementForm.set(true)">+ Record Movement</button>
     </div>
 
-    <div class="tabs">
+    <div class="tabs fade-in">
       <button class="tab" [class.active]="activeTab() === 'stock'" (click)="switchTab('stock')">Current Stock</button>
       <button class="tab" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">Movement History</button>
     </div>
 
-    <div class="toolbar card">
+    <div class="toolbar card fade-in">
       <select class="form-control" style="max-width:220px" [(ngModel)]="warehouseFilter" (ngModelChange)="reload()">
         <option value="">All Warehouses</option>
         <option *ngFor="let w of warehouses()" [ngValue]="w.id">{{ w.name }}</option>
@@ -39,13 +39,13 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
     <app-loading-spinner *ngIf="loading()"></app-loading-spinner>
     <div class="alert alert-danger" *ngIf="errorMessage()">{{ errorMessage() }}</div>
 
-    <div class="card" *ngIf="!loading() && activeTab() === 'stock'">
+    <div class="card slide-up" *ngIf="!loading() && activeTab() === 'stock'">
       <div class="empty-state" *ngIf="stock().length === 0">No stock records match your filters.</div>
       <table class="data-table" *ngIf="stock().length > 0">
         <thead>
           <tr><th>Product</th><th>SKU</th><th>Warehouse</th><th>On Hand</th><th>Minimum</th><th>Status</th></tr>
         </thead>
-        <tbody>
+        <tbody class="stagger">
           <tr *ngFor="let item of stock()">
             <td>{{ item.productName }}</td>
             <td>{{ item.sku }}</td>
@@ -62,13 +62,13 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
       </table>
     </div>
 
-    <div class="card" *ngIf="!loading() && activeTab() === 'history'">
+    <div class="card slide-up" *ngIf="!loading() && activeTab() === 'history'">
       <div class="empty-state" *ngIf="movements().length === 0">No stock movement history yet.</div>
       <table class="data-table" *ngIf="movements().length > 0">
         <thead>
           <tr><th>Type</th><th>Product</th><th>Qty</th><th>Warehouse</th><th>Reason</th><th>By</th><th>When</th></tr>
         </thead>
-        <tbody>
+        <tbody class="stagger">
           <tr *ngFor="let m of movements()">
             <td>
               <span class="badge"
@@ -123,7 +123,7 @@ export class InventoryComponent implements OnInit {
 
   ngOnInit(): void {
     this.inventoryService.getWarehouses().subscribe(w => this.warehouses.set(w));
-    this.productService.getAll().subscribe(p => this.products.set(p));
+    this.productService.getAll({ pageSize: 500 }).subscribe(r => this.products.set(r.items));
     this.reload();
   }
 

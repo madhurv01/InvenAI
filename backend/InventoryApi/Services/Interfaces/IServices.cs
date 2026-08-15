@@ -4,7 +4,7 @@ namespace InventoryApi.Services.Interfaces;
 
 public interface IProductService
 {
-    Task<List<ProductDto>> GetAllAsync(string? search, Guid? categoryId, string? status);
+    Task<PagedResult<ProductDto>> GetAllAsync(string? search, Guid? categoryId, string? status, int page, int pageSize, string? sortBy, bool sortDesc);
     Task<ProductDto> GetByIdAsync(Guid id);
     Task<ProductDto> CreateAsync(CreateProductDto dto);
     Task<ProductDto> UpdateAsync(Guid id, UpdateProductDto dto);
@@ -13,10 +13,26 @@ public interface IProductService
 
 public interface ISupplierService
 {
-    Task<List<SupplierDto>> GetAllAsync(string? search);
+    Task<PagedResult<SupplierDto>> GetAllAsync(string? search, int page, int pageSize);
     Task<SupplierDto> GetByIdAsync(Guid id);
     Task<SupplierDto> CreateAsync(CreateSupplierDto dto);
     Task<SupplierDto> UpdateAsync(Guid id, UpdateSupplierDto dto);
+    Task DeleteAsync(Guid id);
+}
+
+public interface ICategoryService
+{
+    Task<List<CategoryDto>> GetAllAsync();
+    Task<CategoryDto> CreateAsync(CreateCategoryDto dto);
+    Task<CategoryDto> UpdateAsync(Guid id, UpdateCategoryDto dto);
+    Task DeleteAsync(Guid id);
+}
+
+public interface IWarehouseService
+{
+    Task<List<WarehouseManageDto>> GetAllAsync();
+    Task<WarehouseManageDto> CreateAsync(CreateWarehouseDto dto);
+    Task<WarehouseManageDto> UpdateAsync(Guid id, UpdateWarehouseDto dto);
     Task DeleteAsync(Guid id);
 }
 
@@ -36,6 +52,7 @@ public interface IInventoryService
 public interface IDashboardService
 {
     Task<DashboardSummaryDto> GetSummaryAsync();
+    Task<DashboardAnalyticsDto> GetAnalyticsAsync();
 }
 
 public interface IAiAssistantService

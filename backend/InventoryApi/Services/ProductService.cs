@@ -16,9 +16,13 @@ public class ProductService : IProductService
         _db = db;
     }
 
-    public async Task<List<ProductDto>> GetAllAsync(string? search, Guid? categoryId, string? status)
+    public async Task<PagedResult<ProductDto>> GetAllAsync(string? search, Guid? categoryId, string? status, int page, int pageSize, string? sortBy, bool sortDesc)
     {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 200 ? 20 : pageSize;
+
         var query = _db.Products
+            .AsNoTracking()
             .Include(p => p.Category)
             .Include(p => p.Supplier)
             .Include(p => p.InventoryRecords)
@@ -36,14 +40,36 @@ public class ProductService : IProductService
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(p => p.Status == status);
 
-        var products = await query.OrderBy(p => p.Name).ToListAsync();
+        query = (sortBy?.ToLower(), sortDesc) switch
+        {
+            ("sku", false) => query.OrderBy(p => p.Sku),
+            ("sku", true) => query.OrderByDescending(p => p.Sku),
+            ("unitprice", false) => query.OrderBy(p => p.UnitPrice),
+            ("unitprice", true) => query.OrderByDescending(p => p.UnitPrice),
+            ("category", false) => query.OrderBy(p => p.Category!.Name),
+            ("category", true) => query.OrderByDescending(p => p.Category!.Name),
+            ("status", false) => query.OrderBy(p => p.Status),
+            ("status", true) => query.OrderByDescending(p => p.Status),
+            (_, true) => query.OrderByDescending(p => p.Name),
+            _ => query.OrderBy(p => p.Name)
+        };
 
-        return products.Select(MapToDto).ToList();
+        var totalCount = await query.CountAsync();
+        var products = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        return new PagedResult<ProductDto>
+        {
+            Items = products.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<ProductDto> GetByIdAsync(Guid id)
     {
         var product = await _db.Products
+            .AsNoTracking()
             .Include(p => p.Category)
             .Include(p => p.Supplier)
             .Include(p => p.InventoryRecords)

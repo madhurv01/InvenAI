@@ -19,6 +19,7 @@ public class InventoryService : IInventoryService
     public async Task<List<InventoryItemDto>> GetStockAsync(Guid? productId, Guid? warehouseId, bool? lowStockOnly)
     {
         var query = _db.Inventory
+            .AsNoTracking()
             .Include(i => i.Product)
             .Include(i => i.Warehouse)
             .AsQueryable();
@@ -116,6 +117,7 @@ public class InventoryService : IInventoryService
     public async Task<List<StockMovementDto>> GetMovementHistoryAsync(Guid? productId, Guid? warehouseId, int take)
     {
         var query = _db.StockMovements
+            .AsNoTracking()
             .Include(m => m.Product)
             .Include(m => m.Warehouse)
             .AsQueryable();
@@ -148,6 +150,7 @@ public class InventoryService : IInventoryService
     public async Task<List<WarehouseDto>> GetWarehousesAsync()
     {
         return await _db.Warehouses
+            .AsNoTracking()
             .Where(w => w.IsActive)
             .OrderBy(w => w.Name)
             .Select(w => new WarehouseDto { Id = w.Id, Name = w.Name, Location = w.Location })
@@ -164,30 +167,37 @@ public class InventoryService : IInventoryService
 
     public async Task<DashboardSummaryDto> GetInventorySummaryAsync()
     {
-        var products = await _db.Products.Include(p => p.InventoryRecords).Include(p => p.Category).ToListAsync();
+        // Lightweight projection (no full entity/navigation materialization) — stock totals summed on the DB side.
+        var productAgg = await _db.Products
+            .AsNoTracking()
+            .Select(p => new
+            {
+                p.UnitPrice,
+                CategoryName = p.Category != null ? p.Category.Name : "Uncategorized",
+                TotalStock = p.InventoryRecords.Sum(i => (int?)i.QuantityOnHand) ?? 0
+            })
+            .ToListAsync();
+
         var lowStock = await GetLowStockProductsAsync();
         var recentMovements = await GetRecentStockMovementsAsync(10);
 
-        var totalValue = products.Sum(p => p.UnitPrice * (p.InventoryRecords?.Sum(i => i.QuantityOnHand) ?? 0));
-        var totalUnits = products.Sum(p => p.InventoryRecords?.Sum(i => i.QuantityOnHand) ?? 0);
-
-        var categoryBreakdown = products
-            .GroupBy(p => p.Category?.Name ?? "Uncategorized")
+        var categoryBreakdown = productAgg
+            .GroupBy(p => p.CategoryName)
             .Select(g => new CategoryBreakdownDto
             {
                 CategoryName = g.Key,
                 ProductCount = g.Count(),
-                InventoryValue = g.Sum(p => p.UnitPrice * (p.InventoryRecords?.Sum(i => i.QuantityOnHand) ?? 0))
+                InventoryValue = g.Sum(p => p.UnitPrice * p.TotalStock)
             })
             .OrderByDescending(c => c.InventoryValue)
             .ToList();
 
         return new DashboardSummaryDto
         {
-            TotalProducts = products.Count,
-            TotalInventoryValue = totalValue,
+            TotalProducts = productAgg.Count,
+            TotalInventoryValue = productAgg.Sum(p => p.UnitPrice * p.TotalStock),
             LowStockCount = lowStock.Count,
-            TotalStockUnits = totalUnits,
+            TotalStockUnits = productAgg.Sum(p => p.TotalStock),
             LowStockProducts = lowStock,
             RecentMovements = recentMovements,
             CategoryBreakdown = categoryBreakdown

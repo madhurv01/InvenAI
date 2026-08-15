@@ -41,11 +41,91 @@ public class CreateSupplierDto
 
 public class UpdateSupplierDto : CreateSupplierDto { }
 
-// ---------- Categories / Warehouses (lightweight lookups) ----------
+// ---------- Categories ----------
 public class CategoryDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int ProductCount { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateCategoryDto
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [StringLength(400)]
+    public string? Description { get; set; }
+}
+
+public class UpdateCategoryDto : CreateCategoryDto { }
+
+// ---------- Warehouses ----------
+public class WarehouseManageDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Location { get; set; }
+    public bool IsActive { get; set; }
+    public int ProductCount { get; set; }
+    public int TotalUnits { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateWarehouseDto
+{
+    [Required, StringLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    [StringLength(300)]
+    public string? Location { get; set; }
+
+    public bool IsActive { get; set; } = true;
+}
+
+public class UpdateWarehouseDto : CreateWarehouseDto { }
+
+// ---------- Pagination ----------
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalCount / (double)PageSize);
+}
+
+// ---------- Dashboard analytics ----------
+public class WarehouseHeatmapCellDto
+{
+    public string WarehouseName { get; set; } = string.Empty;
+    public string CategoryName { get; set; } = string.Empty;
+    public int QuantityOnHand { get; set; }
+}
+
+public class MovementTrendPointDto
+{
+    public DateOnly Date { get; set; }
+    public int StockIn { get; set; }
+    public int StockOut { get; set; }
+    public int Adjustments { get; set; }
+}
+
+public class StockStatusBreakdownDto
+{
+    public int InStock { get; set; }
+    public int LowStock { get; set; }
+    public int OutOfStock { get; set; }
+}
+
+public class DashboardAnalyticsDto
+{
+    public List<WarehouseHeatmapCellDto> Heatmap { get; set; } = new();
+    public List<MovementTrendPointDto> MovementTrend { get; set; } = new();
+    public StockStatusBreakdownDto StockStatus { get; set; } = new();
+    public List<CategoryBreakdownDto> TopValueCategories { get; set; } = new();
 }
 
 // ---------- Dashboard ----------

@@ -1,14 +1,24 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { Category, CreateProductRequest, Product } from '../../../shared/models/models';
+import { Category, CreateProductRequest, PagedResult, Product } from '../../../shared/models/models';
+
+export interface ProductQuery {
+  search?: string;
+  categoryId?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDesc?: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   constructor(private api: ApiService) {}
 
-  getAll(filters?: { search?: string; categoryId?: string; status?: string }): Observable<Product[]> {
-    return this.api.get<Product[]>('/products', filters);
+  getAll(filters?: ProductQuery): Observable<PagedResult<Product>> {
+    return this.api.get<PagedResult<Product>>('/products', filters);
   }
 
   getById(id: string): Observable<Product> {

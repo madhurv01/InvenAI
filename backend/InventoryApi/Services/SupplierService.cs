@@ -16,9 +16,12 @@ public class SupplierService : ISupplierService
         _db = db;
     }
 
-    public async Task<List<SupplierDto>> GetAllAsync(string? search)
+    public async Task<PagedResult<SupplierDto>> GetAllAsync(string? search, int page, int pageSize)
     {
-        var query = _db.Suppliers.Include(s => s.Products).AsQueryable();
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 200 ? 20 : pageSize;
+
+        var query = _db.Suppliers.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -26,13 +29,38 @@ public class SupplierService : ISupplierService
             query = query.Where(x => x.Name.ToLower().Contains(s) || (x.Email != null && x.Email.ToLower().Contains(s)));
         }
 
-        var suppliers = await query.OrderBy(x => x.Name).ToListAsync();
-        return suppliers.Select(MapToDto).ToList();
+        var totalCount = await query.CountAsync();
+
+        var suppliers = await query
+            .OrderBy(x => x.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => new SupplierDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                ContactPerson = s.ContactPerson,
+                Email = s.Email,
+                Phone = s.Phone,
+                Address = s.Address,
+                LeadTimeDays = s.LeadTimeDays,
+                IsActive = s.IsActive,
+                AssociatedProductCount = s.Products.Count
+            })
+            .ToListAsync();
+
+        return new PagedResult<SupplierDto>
+        {
+            Items = suppliers,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<SupplierDto> GetByIdAsync(Guid id)
     {
-        var supplier = await _db.Suppliers.Include(s => s.Products).FirstOrDefaultAsync(s => s.Id == id)
+        var supplier = await _db.Suppliers.AsNoTracking().Include(s => s.Products).FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException($"Supplier with id '{id}' was not found.");
 
         return MapToDto(supplier);

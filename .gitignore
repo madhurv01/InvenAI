@@ -9,6 +9,9 @@ frontend/**/node_modules/
 frontend/**/dist/
 frontend/**/.angular/
 
+# Raw high-res source images (optimized copies live in frontend/inventory-app/src/assets/images/, those ARE committed)
+frontend/inventory-app/images/
+
 # IDE
 .vs/
 .vscode/

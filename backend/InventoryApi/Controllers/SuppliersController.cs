@@ -18,9 +18,12 @@ public class SuppliersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<SupplierDto>>> GetAll([FromQuery] string? search)
+    public async Task<ActionResult<PagedResult<SupplierDto>>> GetAll(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        return Ok(await _supplierService.GetAllAsync(search));
+        return Ok(await _supplierService.GetAllAsync(search, page, pageSize));
     }
 
     [HttpGet("{id:guid}")]

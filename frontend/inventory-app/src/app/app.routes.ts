@@ -28,6 +28,14 @@ export const routes: Routes = [
       {
         path: 'suppliers',
         loadComponent: () => import('./features/suppliers/components/supplier-list.component').then(m => m.SupplierListComponent)
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('./features/categories/components/category-list.component').then(m => m.CategoryListComponent)
+      },
+      {
+        path: 'warehouses',
+        loadComponent: () => import('./features/warehouses/components/warehouse-list.component').then(m => m.WarehouseListComponent)
       }
     ]
   },

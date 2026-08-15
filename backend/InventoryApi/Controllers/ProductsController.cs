@@ -17,14 +17,18 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
-    /// <summary>Get all products, optionally filtered by search text, category, and status.</summary>
+    /// <summary>Get paged products, optionally filtered by search text, category, and status.</summary>
     [HttpGet]
-    public async Task<ActionResult<List<ProductDto>>> GetAll(
+    public async Task<ActionResult<PagedResult<ProductDto>>> GetAll(
         [FromQuery] string? search,
         [FromQuery] Guid? categoryId,
-        [FromQuery] string? status)
+        [FromQuery] string? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = false)
     {
-        var products = await _productService.GetAllAsync(search, categoryId, status);
+        var products = await _productService.GetAllAsync(search, categoryId, status, page, pageSize, sortBy, sortDesc);
         return Ok(products);
     }
 
