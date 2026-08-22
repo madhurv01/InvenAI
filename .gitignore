@@ -12,6 +12,9 @@ frontend/**/.angular/
 # Raw high-res source images (optimized copies live in frontend/inventory-app/src/assets/images/, those ARE committed)
 frontend/inventory-app/images/
 
+# Local dev HTTPS certificate (self-signed, machine-specific — never share/commit private keys)
+certs/
+
 # IDE
 .vs/
 .vscode/

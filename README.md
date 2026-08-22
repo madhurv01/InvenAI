@@ -66,12 +66,17 @@ Create `appsettings.Development.json` next to `appsettings.json` (it won't exist
   },
   "Anthropic": {
     "ApiKey": "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY"
+  },
+  "Groq": {
+    "ApiKey": "REPLACE_WITH_YOUR_GROQ_API_KEY",
+    "Model": "qwen/qwen3.6-27b"
   }
 }
 ```
 
 - **Jwt:SecretKey**: any long random string (32+ characters). Used to sign login tokens.
 - **Anthropic:ApiKey**: your Claude API key from https://console.anthropic.com. If you leave this as the placeholder, the AI Assistant still works — it falls back to a deterministic, rule-based summary generated from the same real Supabase data, so the feature is functional even before you add a key.
+- **Groq:ApiKey**: powers the **Invoice Extractor** module's vision extraction (free tier). Get a key at https://console.groq.com → API Keys. The configured model, `qwen/qwen3.6-27b`, is the vision-capable model currently available on Groq's free tier — if it's greyed out for your account, enable it at **console.groq.com → Settings → Limits** first (org-level model permissions are opt-in). Without a Groq key, the Invoice Extractor's "Scan Invoice" flow will return an error explaining what's missing; every other feature works fine regardless.
 
 ### Run
 
@@ -145,16 +150,29 @@ User question
 
 The AI **never** executes SQL directly — it only ever sees the JSON returned by those three whitelisted backend functions, which keeps the surface area small, predictable, and easy to extend (add a new intent + a new controlled function whenever you need the assistant to answer a new kind of question).
 
+### Invoice Extractor
+Photograph or upload an invoice (mobile camera capture via `capture="environment"`, or gallery/file picker) and have it read automatically:
+
+```
+Photo (compressed client-side to ≤1600px JPEG)
+   → Groq vision model (qwen/qwen3.6-27b) — structured JSON extraction
+   → Editable preview (vendor, line items, tax, totals — fix any AI mistakes before committing)
+   → Save: server renders a formatted PDF (QuestPDF) and stores it as bytea in Supabase Postgres
+     — or — Discard: nothing is saved
+```
+
+A "Saved Invoices" tab lists everything saved, with PDF download and delete. No separate object storage is used — the generated PDF lives directly in the `invoices` table alongside the extracted data (`database/04_invoices.sql`).
+
 ---
 
 ## 5. Project structure reference
 
 **Backend** (`Controllers → Services → EF Core/Supabase`):
 ```
-Controllers/     ProductsController, SuppliersController, InventoryController,
-                 DashboardController, AiAssistantController, AuthController, CategoriesController
-Services/        ProductService, SupplierService, InventoryService, DashboardService,
-                 AiAssistantService, AuthService (+ Interfaces/)
+Controllers/     ProductsController, SuppliersController, InventoryController, WarehousesController,
+                 DashboardController, AiAssistantController, AuthController, CategoriesController, InvoicesController
+Services/        ProductService, SupplierService, CategoryService, WarehouseService, InventoryService, DashboardService,
+                 AiAssistantService, AuthService, InvoiceExtractionService (+ Interfaces/)
 DTOs/            Request/response contracts, kept separate from entities
 Models/          EF Core entities
 Data/             InventoryDbContext (maps entities to snake_case Supabase tables)
@@ -170,7 +188,10 @@ features/
   products/      List + create/edit form
   inventory/     Stock view, movement history, movement form
   suppliers/     List + create/edit form
-  dashboard/     Summary cards, category chart, low-stock table, recent movements
+  categories/    List + create/edit form
+  warehouses/    List + create/edit form
+  invoices/      Invoice Extractor — camera/gallery capture, AI preview, save/discard, saved-invoices list
+  dashboard/     Summary cards, charts, heatmap, low-stock table, recent movements
   ai/            AI Assistant chat panel + service
 ```
 

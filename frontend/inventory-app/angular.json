@@ -47,7 +47,11 @@
           },
           "defaultConfiguration": "development",
           "options": {
-            "port": 4200
+            "port": 4200,
+            "host": "0.0.0.0",
+            "ssl": true,
+            "sslCert": "../../certs/dev-cert.pem",
+            "sslKey": "../../certs/dev-key.pem"
           }
         }
       }

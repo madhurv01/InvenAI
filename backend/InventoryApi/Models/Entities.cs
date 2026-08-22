@@ -91,3 +91,22 @@ public class AppUser
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
 }
+
+public class Invoice
+{
+    public Guid Id { get; set; }
+    public string VendorName { get; set; } = string.Empty;
+    public string? InvoiceNumber { get; set; }
+    public DateOnly? InvoiceDate { get; set; }
+    public string Currency { get; set; } = "INR";
+    public decimal Subtotal { get; set; }
+    public decimal TaxAmount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public string LineItemsJson { get; set; } = "[]";
+    public string? RawAiResponseJson { get; set; }
+    public byte[] PdfData { get; set; } = Array.Empty<byte>();
+    public string PdfFileName { get; set; } = string.Empty;
+    public string? SourceImageName { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+}

@@ -65,3 +65,12 @@ public interface IAuthService
     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto dto);
     Task<AuthResponseDto> LoginAsync(LoginRequestDto dto);
 }
+
+public interface IInvoiceExtractionService
+{
+    Task<ExtractedInvoiceDto> ExtractAsync(ExtractInvoiceRequestDto request);
+    Task<InvoiceSummaryDto> SaveAsync(SaveInvoiceRequestDto dto, Guid? userId);
+    Task<List<InvoiceSummaryDto>> GetAllAsync();
+    Task<(byte[] Data, string FileName)> GetPdfAsync(Guid id);
+    Task DeleteAsync(Guid id);
+}

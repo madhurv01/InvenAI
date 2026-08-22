@@ -67,6 +67,9 @@ const DEFAULT_WIDTH = 260;
           <a routerLink="/warehouses" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Warehouses' : ''">
             <span class="nav-icon">🏭</span> @if (!collapsed()) { <span>Warehouses</span> }
           </a>
+          <a routerLink="/invoices" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Invoice Extractor' : ''">
+            <span class="nav-icon">🧾</span> @if (!collapsed()) { <span>Invoice Extractor</span> }
+          </a>
         </nav>
 
         @if (!collapsed()) {
