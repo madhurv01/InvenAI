@@ -197,6 +197,41 @@ export interface AuthResponse {
   expiresAt: string;
 }
 
+export interface ExtractedLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface ExtractedInvoice {
+  vendorName: string;
+  vendorAddress?: string | null;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  currency: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  lineItems: ExtractedLineItem[];
+  extractionNotes?: string | null;
+}
+
+export interface SaveInvoiceRequest extends ExtractedInvoice {
+  sourceImageName?: string | null;
+}
+
+export interface InvoiceSummary {
+  id: string;
+  vendorName: string;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  currency: string;
+  totalAmount: number;
+  pdfFileName: string;
+  createdAt: string;
+}
+
 export interface ApiError {
   message: string;
   detail?: string;

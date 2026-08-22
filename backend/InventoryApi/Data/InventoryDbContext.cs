@@ -14,6 +14,7 @@ public class InventoryDbContext : DbContext
     public DbSet<Inventory> Inventory => Set<Inventory>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +120,27 @@ public class InventoryDbContext : DbContext
             e.Property(x => x.IsActive).HasColumnName("is_active");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<Invoice>(e =>
+        {
+            e.ToTable("invoices");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.VendorName).HasColumnName("vendor_name");
+            e.Property(x => x.InvoiceNumber).HasColumnName("invoice_number");
+            e.Property(x => x.InvoiceDate).HasColumnName("invoice_date");
+            e.Property(x => x.Currency).HasColumnName("currency");
+            e.Property(x => x.Subtotal).HasColumnName("subtotal").HasColumnType("numeric(14,2)");
+            e.Property(x => x.TaxAmount).HasColumnName("tax_amount").HasColumnType("numeric(14,2)");
+            e.Property(x => x.TotalAmount).HasColumnName("total_amount").HasColumnType("numeric(14,2)");
+            e.Property(x => x.LineItemsJson).HasColumnName("line_items").HasColumnType("jsonb");
+            e.Property(x => x.RawAiResponseJson).HasColumnName("raw_ai_response").HasColumnType("jsonb");
+            e.Property(x => x.PdfData).HasColumnName("pdf_data");
+            e.Property(x => x.PdfFileName).HasColumnName("pdf_file_name");
+            e.Property(x => x.SourceImageName).HasColumnName("source_image_name");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
     }
 }
