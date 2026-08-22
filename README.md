@@ -1,3 +1,11 @@
+
+<img
+    src="invenMain.png"
+    alt="Build Your Own Agent Now - n8n AI Agents"
+    width="100%"
+  />
+
+
 # AI-Powered Inventory Management System
 
 A focused, modular inventory management web app — not a full ERP.
