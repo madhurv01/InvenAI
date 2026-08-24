@@ -147,18 +147,42 @@ public class CategoryBreakdownDto
     public decimal InventoryValue { get; set; }
 }
 
-// ---------- AI Assistant ----------
-public class AiChatRequestDto
+// ---------- Chat (AI) ----------
+public class ChatRequestDto
 {
     [Required, StringLength(1000)]
     public string Question { get; set; } = string.Empty;
+
+    public Guid? ConversationId { get; set; }
 }
 
-public class AiChatResponseDto
+public class ChatResponseDto
 {
+    public Guid ConversationId { get; set; }
     public string Answer { get; set; } = string.Empty;
-    public string Intent { get; set; } = string.Empty;
+    public string? Sql { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class ChatConversationSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class ChatMessageDto
+{
+    public string Role { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class ChatConversationDetailDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public List<ChatMessageDto> Messages { get; set; } = new();
 }
 
 // ---------- Auth ----------

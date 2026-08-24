@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ChatWidgetComponent } from '../../features/chat/components/chat-widget.component';
 
 interface SidebarTheme {
   id: string;
@@ -25,7 +26,7 @@ const DEFAULT_WIDTH = 260;
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ChatWidgetComponent],
   template: `
     <div class="shell" [class.no-select]="resizing()">
       <main class="content" [class.content-collapsed]="collapsed()">
@@ -70,6 +71,9 @@ const DEFAULT_WIDTH = 260;
           <a routerLink="/invoices" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Invoice Extractor' : ''">
             <span class="nav-icon">🧾</span> @if (!collapsed()) { <span>Invoice Extractor</span> }
           </a>
+          <a routerLink="/chat" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'InvenChat' : ''">
+            <span class="nav-icon">💬</span> @if (!collapsed()) { <span>InvenChat</span> }
+          </a>
         </nav>
 
         @if (!collapsed()) {
@@ -105,6 +109,8 @@ const DEFAULT_WIDTH = 260;
           </button>
         </div>
       </aside>
+
+      <app-chat-widget></app-chat-widget>
     </div>
   `,
   styles: [`

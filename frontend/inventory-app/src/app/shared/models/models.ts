@@ -165,16 +165,29 @@ export interface DashboardAnalytics {
   topValueCategories: CategoryBreakdown[];
 }
 
-export interface AiChatMessage {
+export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
 }
 
-export interface AiChatResponse {
+export interface ChatResponse {
+  conversationId: string;
   answer: string;
-  intent: string;
+  sql?: string;
   generatedAt: string;
+}
+
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface ChatConversationDetail {
+  id: string;
+  title: string;
+  messages: { role: 'user' | 'assistant'; content: string; createdAt: string }[];
 }
 
 export interface LoginRequest {

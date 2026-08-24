@@ -3,7 +3,6 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { DashboardService } from '../services/dashboard.service';
 import { DashboardAnalytics, DashboardSummary } from '../../../shared/models/models';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
-import { AiAssistantPanelComponent } from '../../ai/components/ai-assistant-panel.component';
 
 interface HeatmapRow {
   warehouseName: string;
@@ -13,7 +12,7 @@ interface HeatmapRow {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, LoadingSpinnerComponent, AiAssistantPanelComponent],
+  imports: [CommonModule, LoadingSpinnerComponent],
   template: `
     <div class="page-header fade-in">
       <div>
@@ -51,7 +50,6 @@ interface HeatmapRow {
       </div>
 
       <div class="main-grid">
-        <div class="left-col">
 
           <div class="charts-row" *ngIf="analytics() as a">
             <div class="card card-hover chart-card slide-up">
@@ -191,11 +189,6 @@ interface HeatmapRow {
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div class="right-col">
-          <app-ai-assistant-panel></app-ai-assistant-panel>
-        </div>
       </div>
     </ng-container>
   `,
@@ -216,8 +209,7 @@ interface HeatmapRow {
     .stat-sky { border-top: 3px solid #38bdf8; }
     .stat-rose { border-top: 3px solid #f43f5e; }
 
-    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
-    @media (max-width: 980px) { .main-grid { grid-template-columns: 1fr; } }
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
 
     .charts-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 20px; }
     @media (max-width: 720px) { .charts-row { grid-template-columns: 1fr; } }

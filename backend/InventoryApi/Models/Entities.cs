@@ -92,6 +92,26 @@ public class AppUser
     public DateTime CreatedAt { get; set; }
 }
 
+public class ChatConversation
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Title { get; set; } = "New chat";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+}
+
+public class ChatMessage
+{
+    public Guid Id { get; set; }
+    public Guid ConversationId { get; set; }
+    public string Role { get; set; } = string.Empty; // user | assistant
+    public string Content { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
 public class Invoice
 {
     public Guid Id { get; set; }

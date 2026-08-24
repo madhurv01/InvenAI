@@ -55,9 +55,12 @@ public interface IDashboardService
     Task<DashboardAnalyticsDto> GetAnalyticsAsync();
 }
 
-public interface IAiAssistantService
+public interface IChatService
 {
-    Task<AiChatResponseDto> AskAsync(string question);
+    Task<ChatResponseDto> AskAsync(Guid userId, string question, Guid? conversationId);
+    Task<List<ChatConversationSummaryDto>> GetConversationsAsync(Guid userId);
+    Task<ChatConversationDetailDto> GetConversationAsync(Guid userId, Guid conversationId);
+    Task DeleteConversationAsync(Guid userId, Guid conversationId);
 }
 
 public interface IAuthService

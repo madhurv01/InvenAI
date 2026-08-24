@@ -40,6 +40,10 @@ export const routes: Routes = [
       {
         path: 'invoices',
         loadComponent: () => import('./features/invoices/components/invoice-extractor.component').then(m => m.InvoiceExtractorComponent)
+      },
+      {
+        path: 'chat',
+        loadComponent: () => import('./features/chat/components/chat-page.component').then(m => m.ChatPageComponent)
       }
     ]
   },

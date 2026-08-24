@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using InventoryApi.DTOs;
 using InventoryApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -34,25 +36,53 @@ public class DashboardController : ControllerBase
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
-public class AiAssistantController : ControllerBase
+[Route("api/chat")]
+public class ChatController : ControllerBase
 {
-    private readonly IAiAssistantService _aiAssistantService;
+    private readonly IChatService _chatService;
 
-    public AiAssistantController(IAiAssistantService aiAssistantService)
+    public ChatController(IChatService chatService)
     {
-        _aiAssistantService = aiAssistantService;
+        _chatService = chatService;
     }
 
     /// <summary>
-    /// AI chain: user question -> intent understanding -> controlled inventory functions
-    /// -> Supabase data -> AI-generated natural language response.
+    /// Chat chain: user question -> LLM generates read-only SQL -> Supabase data
+    /// -> LLM turns the results into a natural language response. Persists both the
+    /// question and answer to the (new or existing) conversation for history.
     /// </summary>
     [HttpPost("ask")]
-    public async Task<ActionResult<AiChatResponseDto>> Ask([FromBody] AiChatRequestDto dto)
+    public async Task<ActionResult<ChatResponseDto>> Ask([FromBody] ChatRequestDto dto)
     {
-        var response = await _aiAssistantService.AskAsync(dto.Question);
+        var response = await _chatService.AskAsync(GetUserId(), dto.Question, dto.ConversationId);
         return Ok(response);
+    }
+
+    /// <summary>List this user's past conversations, most recently updated first.</summary>
+    [HttpGet("conversations")]
+    public async Task<ActionResult<List<ChatConversationSummaryDto>>> GetConversations()
+    {
+        return Ok(await _chatService.GetConversationsAsync(GetUserId()));
+    }
+
+    /// <summary>Full message history for one conversation.</summary>
+    [HttpGet("conversations/{id:guid}")]
+    public async Task<ActionResult<ChatConversationDetailDto>> GetConversation(Guid id)
+    {
+        return Ok(await _chatService.GetConversationAsync(GetUserId(), id));
+    }
+
+    [HttpDelete("conversations/{id:guid}")]
+    public async Task<IActionResult> DeleteConversation(Guid id)
+    {
+        await _chatService.DeleteConversationAsync(GetUserId(), id);
+        return NoContent();
+    }
+
+    private Guid GetUserId()
+    {
+        var value = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(value, out var id) ? id : throw new UnauthorizedAccessException("Invalid user token.");
     }
 }
 

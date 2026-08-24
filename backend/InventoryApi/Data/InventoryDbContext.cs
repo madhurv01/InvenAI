@@ -15,6 +15,8 @@ public class InventoryDbContext : DbContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,6 +122,30 @@ public class InventoryDbContext : DbContext
             e.Property(x => x.IsActive).HasColumnName("is_active");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<ChatConversation>(e =>
+        {
+            e.ToTable("chat_conversations");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Title).HasColumnName("title");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+            e.HasMany(x => x.Messages).WithOne().HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatMessage>(e =>
+        {
+            e.ToTable("chat_messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ConversationId).HasColumnName("conversation_id");
+            e.Property(x => x.Role).HasColumnName("role");
+            e.Property(x => x.Content).HasColumnName("content");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
 
         modelBuilder.Entity<Invoice>(e =>

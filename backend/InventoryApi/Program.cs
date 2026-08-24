@@ -23,14 +23,9 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IInvoiceExtractionService, InvoiceExtractionService>();
-
-builder.Services.AddHttpClient("Anthropic", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
 
 builder.Services.AddHttpClient("Groq", client =>
 {
