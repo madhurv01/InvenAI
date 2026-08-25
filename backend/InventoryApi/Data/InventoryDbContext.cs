@@ -15,6 +15,11 @@ public class InventoryDbContext : DbContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<Shipment> Shipments => Set<Shipment>();
+    public DbSet<PackageOrder> PackageOrders => Set<PackageOrder>();
+    public DbSet<PackageOrderItem> PackageOrderItems => Set<PackageOrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,6 +125,92 @@ public class InventoryDbContext : DbContext
             e.Property(x => x.IsActive).HasColumnName("is_active");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<ChatConversation>(e =>
+        {
+            e.ToTable("chat_conversations");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Title).HasColumnName("title");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+            e.HasMany(x => x.Messages).WithOne().HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatMessage>(e =>
+        {
+            e.ToTable("chat_messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ConversationId).HasColumnName("conversation_id");
+            e.Property(x => x.Role).HasColumnName("role");
+            e.Property(x => x.Content).HasColumnName("content");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<Shipment>(e =>
+        {
+            e.ToTable("shipments");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.OrderNumber).HasColumnName("order_number");
+            e.Property(x => x.Reference).HasColumnName("reference");
+            e.Property(x => x.OriginName).HasColumnName("origin_name");
+            e.Property(x => x.OriginLat).HasColumnName("origin_lat");
+            e.Property(x => x.OriginLng).HasColumnName("origin_lng");
+            e.Property(x => x.DestinationName).HasColumnName("destination_name");
+            e.Property(x => x.DestinationLat).HasColumnName("destination_lat");
+            e.Property(x => x.DestinationLng).HasColumnName("destination_lng");
+            e.Property(x => x.RouteGeoJson).HasColumnName("route_geojson").HasColumnType("jsonb");
+            e.Property(x => x.DistanceKm).HasColumnName("distance_km").HasColumnType("numeric(10,2)");
+            e.Property(x => x.DurationMinutes).HasColumnName("duration_minutes");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.StartedAt).HasColumnName("started_at");
+            e.Property(x => x.EstimatedArrivalAt).HasColumnName("estimated_arrival_at");
+            e.Property(x => x.DeliveredAt).HasColumnName("delivered_at");
+            e.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(x => x.OrderNumber).IsUnique();
+        });
+
+        modelBuilder.Entity<PackageOrder>(e =>
+        {
+            e.ToTable("package_orders");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.OrderNumber).HasColumnName("order_number");
+            e.Property(x => x.WarehouseId).HasColumnName("warehouse_id");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.Priority).HasColumnName("priority");
+            e.Property(x => x.Notes).HasColumnName("notes");
+            e.Property(x => x.ExpectedShipDate).HasColumnName("expected_ship_date");
+            e.Property(x => x.ShipmentId).HasColumnName("shipment_id");
+            e.Property(x => x.ShippedAt).HasColumnName("shipped_at");
+            e.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(x => x.OrderNumber).IsUnique();
+
+            e.HasOne(x => x.Warehouse).WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Shipment).WithMany().HasForeignKey(x => x.ShipmentId).OnDelete(DeleteBehavior.SetNull);
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.PackageOrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PackageOrderItem>(e =>
+        {
+            e.ToTable("package_order_items");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PackageOrderId).HasColumnName("package_order_id");
+            e.Property(x => x.ProductId).HasColumnName("product_id");
+            e.Property(x => x.Quantity).HasColumnName("quantity");
+            e.Property(x => x.CustomizationNote).HasColumnName("customization_note");
+
+            e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Invoice>(e =>

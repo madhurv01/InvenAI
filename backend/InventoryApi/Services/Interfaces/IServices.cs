@@ -55,15 +55,36 @@ public interface IDashboardService
     Task<DashboardAnalyticsDto> GetAnalyticsAsync();
 }
 
-public interface IAiAssistantService
+public interface IChatService
 {
-    Task<AiChatResponseDto> AskAsync(string question);
+    Task<ChatResponseDto> AskAsync(Guid userId, string question, Guid? conversationId);
+    Task<List<ChatConversationSummaryDto>> GetConversationsAsync(Guid userId);
+    Task<ChatConversationDetailDto> GetConversationAsync(Guid userId, Guid conversationId);
+    Task DeleteConversationAsync(Guid userId, Guid conversationId);
 }
 
 public interface IAuthService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto dto);
     Task<AuthResponseDto> LoginAsync(LoginRequestDto dto);
+}
+
+public interface IShipmentService
+{
+    Task<ShipmentDetailDto> CreateAsync(CreateShipmentDto dto, Guid? userId);
+    Task<List<ShipmentSummaryDto>> GetAllAsync();
+    Task<ShipmentDetailDto> GetByIdAsync(Guid id);
+    Task<ShipmentDetailDto> UpdateStatusAsync(Guid id, string status);
+    Task DeleteAsync(Guid id);
+}
+
+public interface IPackageOrderService
+{
+    Task<PackageOrderDetailDto> CreateAsync(CreatePackageOrderDto dto, Guid? userId);
+    Task<List<PackageOrderSummaryDto>> GetAllAsync();
+    Task<List<PackageOrderPendingDto>> GetPendingAsync();
+    Task<PackageOrderDetailDto> GetByIdAsync(Guid id);
+    Task<PackageOrderDetailDto> CancelAsync(Guid id);
 }
 
 public interface IInvoiceExtractionService

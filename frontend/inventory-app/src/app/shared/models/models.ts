@@ -165,16 +165,154 @@ export interface DashboardAnalytics {
   topValueCategories: CategoryBreakdown[];
 }
 
-export interface AiChatMessage {
+export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
 }
 
-export interface AiChatResponse {
+export interface ChatResponse {
+  conversationId: string;
   answer: string;
-  intent: string;
+  sql?: string;
   generatedAt: string;
+}
+
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface ChatConversationDetail {
+  id: string;
+  title: string;
+  messages: { role: 'user' | 'assistant'; content: string; createdAt: string }[];
+}
+
+export type ShipmentStatus = 'Pending' | 'InTransit' | 'Delivered' | 'Cancelled';
+
+export interface ShipmentSummary {
+  id: string;
+  orderNumber: string;
+  reference?: string;
+  packageOrderNumber?: string;
+  originName: string;
+  destinationName: string;
+  status: ShipmentStatus;
+  distanceKm: number;
+  progressPercent: number;
+  startedAt: string;
+  estimatedArrivalAt: string;
+  createdAt: string;
+}
+
+export interface ShipmentDetail {
+  id: string;
+  orderNumber: string;
+  reference?: string;
+  packageOrderId?: string;
+  packageOrderNumber?: string;
+  originName: string;
+  originLat: number;
+  originLng: number;
+  destinationName: string;
+  destinationLat: number;
+  destinationLng: number;
+  route: number[][]; // [ [lat, lng], ... ]
+  distanceKm: number;
+  durationMinutes: number;
+  status: ShipmentStatus;
+  progressPercent: number;
+  startedAt: string;
+  estimatedArrivalAt: string;
+  deliveredAt?: string;
+  cancelledAt?: string;
+  createdAt: string;
+}
+
+export interface CreateShipmentRequest {
+  reference?: string;
+  packageOrderId?: string;
+  originName: string;
+  originLat: number;
+  originLng: number;
+  destinationName: string;
+  destinationLat: number;
+  destinationLng: number;
+}
+
+export interface GeocodeResult {
+  displayName: string;
+  lat: number;
+  lng: number;
+}
+
+export type PackageOrderStatus = 'Pending' | 'Shipped' | 'Cancelled';
+export type PackageOrderPriority = 'Low' | 'Normal' | 'High';
+
+export interface PackageOrderItem {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  customizationNote?: string;
+}
+
+export interface PackageOrderSummary {
+  id: string;
+  orderNumber: string;
+  warehouseName: string;
+  status: PackageOrderStatus;
+  priority: PackageOrderPriority;
+  itemCount: number;
+  totalQuantity: number;
+  expectedShipDate?: string;
+  shipmentOrderNumber?: string;
+  createdAt: string;
+}
+
+export interface PackageOrderPending {
+  id: string;
+  orderNumber: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseLocation?: string;
+  itemCount: number;
+  totalQuantity: number;
+  priority: PackageOrderPriority;
+}
+
+export interface PackageOrderDetail {
+  id: string;
+  orderNumber: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseLocation?: string;
+  status: PackageOrderStatus;
+  priority: PackageOrderPriority;
+  notes?: string;
+  expectedShipDate?: string;
+  items: PackageOrderItem[];
+  shipmentId?: string;
+  shipmentOrderNumber?: string;
+  shippedAt?: string;
+  cancelledAt?: string;
+  createdAt: string;
+}
+
+export interface CreatePackageOrderItemRequest {
+  productId: string;
+  quantity: number;
+  customizationNote?: string;
+}
+
+export interface CreatePackageOrderRequest {
+  warehouseId: string;
+  priority: PackageOrderPriority;
+  notes?: string;
+  expectedShipDate?: string;
+  items: CreatePackageOrderItemRequest[];
 }
 
 export interface LoginRequest {

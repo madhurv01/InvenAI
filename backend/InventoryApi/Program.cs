@@ -23,18 +23,22 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IInvoiceExtractionService, InvoiceExtractionService>();
-
-builder.Services.AddHttpClient("Anthropic", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
+builder.Services.AddScoped<IShipmentService, ShipmentService>();
+builder.Services.AddScoped<IPackageOrderService, PackageOrderService>();
 
 builder.Services.AddHttpClient("Groq", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHttpClient("Osrm", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    // The public OSRM demo server blocks requests with no User-Agent header.
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("InvenAI-InventoryApp/1.0 (+https://github.com)");
 });
 
 builder.Services.AddControllers();

@@ -13,7 +13,8 @@ A focused, modular inventory management web app — not a full ERP.
 - **Frontend:** Angular 18 (standalone components), HTML5, CSS3
 - **Backend:** C# / ASP.NET Core 8 Web API
 - **Database:** Supabase PostgreSQL (only)
-- **AI:** Claude API (Anthropic) — with a safe rule-based fallback if no key is configured
+- **AI:** InvenChat — free, open-source LLM (via Groq's fast inference API) doing text-to-SQL over the Supabase schema
+- **Maps:** Leaflet + OpenStreetMap for shipment tracking, OSRM for real road routing, Nominatim for address search — all free, open-source, no API key or billing
 - **Auth:** JWT (email + password, BCrypt-hashed)
 
 ```
@@ -32,6 +33,10 @@ InventoryApp/
 3. Open the **SQL Editor** in Supabase and run, in order:
    - `database/01_schema.sql` — creates all tables, constraints, indexes, triggers.
    - `database/02_seed.sql` — optional sample data (products, suppliers, stock, and a demo admin login).
+   - `database/04_invoices.sql` — Invoice Extractor storage.
+   - `database/05_chat_history.sql` — Chat conversation history (`chat_conversations`, `chat_messages`).
+   - `database/06_shipments.sql` — Shipment tracking (`shipments`).
+   - `database/07_package_orders.sql` — Package Orders (`package_orders`, `package_order_items`).
 
 The seed script creates a default login:
 - **Email:** `admin@inventory.local`
@@ -60,7 +65,7 @@ Max Auto Prepare=0;No Reset On Close=true
 ### Secrets: two appsettings files, only one is committed
 
 - **`appsettings.json`** (committed to git) holds only placeholder values — safe as a template.
-- **`appsettings.Development.json`** (git-ignored — see `.gitignore`) holds your real DB password, JWT secret, and Anthropic API key. ASP.NET Core automatically layers this over `appsettings.json` when `ASPNETCORE_ENVIRONMENT=Development`, which is the profile set up in `Properties/launchSettings.json`.
+- **`appsettings.Development.json`** (git-ignored — see `.gitignore`) holds your real DB password and JWT secret. ASP.NET Core automatically layers this over `appsettings.json` when `ASPNETCORE_ENVIRONMENT=Development`, which is the profile set up in `Properties/launchSettings.json`.
 
 Create `appsettings.Development.json` next to `appsettings.json` (it won't exist on a fresh clone, since it's git-ignored) with:
 
@@ -72,9 +77,6 @@ Create `appsettings.Development.json` next to `appsettings.json` (it won't exist
   "Jwt": {
     "SecretKey": "REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
   },
-  "Anthropic": {
-    "ApiKey": "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY"
-  },
   "Groq": {
     "ApiKey": "REPLACE_WITH_YOUR_GROQ_API_KEY",
     "Model": "qwen/qwen3.6-27b"
@@ -83,8 +85,7 @@ Create `appsettings.Development.json` next to `appsettings.json` (it won't exist
 ```
 
 - **Jwt:SecretKey**: any long random string (32+ characters). Used to sign login tokens.
-- **Anthropic:ApiKey**: your Claude API key from https://console.anthropic.com. If you leave this as the placeholder, the AI Assistant still works — it falls back to a deterministic, rule-based summary generated from the same real Supabase data, so the feature is functional even before you add a key.
-- **Groq:ApiKey**: powers the **Invoice Extractor** module's vision extraction (free tier). Get a key at https://console.groq.com → API Keys. The configured model, `qwen/qwen3.6-27b`, is the vision-capable model currently available on Groq's free tier — if it's greyed out for your account, enable it at **console.groq.com → Settings → Limits** first (org-level model permissions are opt-in). Without a Groq key, the Invoice Extractor's "Scan Invoice" flow will return an error explaining what's missing; every other feature works fine regardless.
+- **Groq:ApiKey**: powers both the **Invoice Extractor**'s vision extraction and **InvenChat** (free tier). Get a key at https://console.groq.com → API Keys. `Groq:Model` (`qwen/qwen3.6-27b`) is the vision-capable model used for invoices; `Groq:ChatModel` (defaults to the same `qwen/qwen3.6-27b`) is the text model InvenChat uses for SQL generation and answers — if either is greyed out for your account, enable it at **console.groq.com → Settings → Limits** first (org-level model permissions are opt-in). Without a Groq key, the Invoice Extractor's "Scan Invoice" flow and InvenChat will both return an error explaining what's missing; every other feature works fine regardless.
 
 ### Run
 
@@ -144,19 +145,21 @@ Full CRUD, with lead time (days), contact info, and product associations. Suppli
 ### Inventory Dashboard
 Total products, total inventory value, low-stock count, recent movements, and a category-value breakdown chart — plus search/filter controls throughout the product/inventory/supplier screens.
 
-### AI Inventory Assistant
-Embedded in the dashboard. The chain is:
+### InvenChat (AI, free & open-source)
+A floating chat button (bottom-left, on every page) plus a dedicated `/chat` page. Powered by a free, open-source LLM (`qwen/qwen3.6-27b`) running on [Groq](https://console.groq.com)'s fast inference hardware — no Anthropic/OpenAI, same free API key already used by the Invoice Extractor. The chain is:
 
 ```
 User question
-   → Intent classification (low_stock / recent_movements / summary)
-   → Controlled .NET function (GetLowStockProductsAsync / GetRecentStockMovementsAsync / GetInventorySummaryAsync)
-   → Real data from Supabase
-   → Claude API generates a concise, business-oriented answer from that data
-   → Rendered in the Angular chat panel
+   → Groq LLM generates a read-only SQL SELECT against the known Supabase schema
+   → Query validated (SELECT-only, no semicolons/DDL/DML keywords) and run inside
+     a rolled-back, read-only transaction with a statement timeout
+   → Groq LLM turns the resulting rows into a concise, business-oriented answer
+   → Rendered in the Angular chat widget / InvenChat page
 ```
 
-The AI **never** executes SQL directly — it only ever sees the JSON returned by those three whitelisted backend functions, which keeps the surface area small, predictable, and easy to extend (add a new intent + a new controlled function whenever you need the assistant to answer a new kind of question).
+Because the SQL is generated per-question, InvenChat can answer open-ended questions across any of the tables (products, suppliers, warehouses, inventory, stock movements, categories) rather than being limited to a fixed set of intents. It never runs anything but `SELECT`, and every query executes inside a transaction that is always rolled back, so it cannot mutate data.
+
+**Conversation history:** every question and answer is saved per-user to `chat_conversations`/`chat_messages` (`database/05_chat_history.sql`). The `/chat` page shows a history sidebar (left) — click "+ New chat" to start fresh or click a past conversation to reopen its full Q&A history; conversations are private per user and titled from their first question.
 
 ### Invoice Extractor
 Photograph or upload an invoice (mobile camera capture via `capture="environment"`, or gallery/file picker) and have it read automatically:
@@ -171,6 +174,38 @@ Photo (compressed client-side to ≤1600px JPEG)
 
 A "Saved Invoices" tab lists everything saved, with PDF download and delete. No separate object storage is used — the generated PDF lives directly in the `invoices` table alongside the extracted data (`database/04_invoices.sql`).
 
+### Package Orders
+Reserve products from a specific warehouse ahead of shipping them — the bridge between Inventory and Shipments:
+
+```
+Pick a warehouse + one or more products, each with a quantity and an optional
+free-text customization note (a "tallied" variant of that product — e.g. "blue,
+engraved, gift-wrapped" — still counted against the same stock, just annotated)
+   → Stock is validated per product (aggregated across duplicate lines) and, if
+     sufficient, deducted immediately as a stock_movements OUT entry per line
+     (database/07_package_orders.sql) — same mechanism as a manual inventory movement
+   → Order sits Pending until it's linked to a shipment
+   → Cancelling a Pending order reverses the deduction (an IN movement restocks it)
+```
+
+The **Package Orders** list (`/package-orders`) shows every order with status, priority, and item/quantity counts. **New Package Order** (`/package-orders/new`) lets you add any number of line items, each an existing product + quantity + optional customization note, plus order-level priority/notes/expected ship date. The detail page shows the full line-item breakdown and, once shipped, links straight to the live-tracking shipment.
+
+### Shipments (live map tracking)
+Create a shipment order from any two points and watch it move on a real map — fully free/open-source, no Google Maps or billing involved. A shipment can optionally carry a **Pending Package Order** (linked from the New Shipment page, or via "🚢 Ship this Order" on a package order's detail page) — selecting one auto-fills the origin from its warehouse and marks the package order **Shipped** once the shipment is created (deleting the shipment frees it back to Pending):
+
+```
+Pick origin + destination (address search via Nominatim, or click/drag pins on the map) —
+optionally auto-filled from a linked Package Order's warehouse
+   → Server asks OSRM (free public routing API) for the real road route, distance, and ETA
+   → Route + timings stored once (database/06_shipments.sql)
+   → Live map (Leaflet + OpenStreetMap tiles) draws the route and animates a truck marker
+     along it in real time, based on elapsed time vs. estimated arrival
+   → Status auto-transitions InTransit → Delivered when the ETA passes (or mark
+     Delivered/Cancelled manually at any time)
+```
+
+The **Shipments** list (`/shipments`) shows every order with a live progress bar and status badge (polls every 15s), plus which package order (if any) it's carrying. **New Shipment** (`/shipments/new`) is a two-pane picker: address autocomplete + "pick on map" + draggable pins for both origin and destination. The **detail page** (`/shipments/:id`) shows the live-animated map alongside an elapsed/remaining countdown timer that ticks every second — no backend polling needed for the timer itself, since progress is derived purely from `startedAt`/`estimatedArrivalAt` on the client.
+
 ---
 
 ## 5. Project structure reference
@@ -178,9 +213,10 @@ A "Saved Invoices" tab lists everything saved, with PDF download and delete. No 
 **Backend** (`Controllers → Services → EF Core/Supabase`):
 ```
 Controllers/     ProductsController, SuppliersController, InventoryController, WarehousesController,
-                 DashboardController, AiAssistantController, AuthController, CategoriesController, InvoicesController
+                 DashboardController, ChatController, AuthController, CategoriesController, InvoicesController,
+                 ShipmentsController, PackageOrdersController
 Services/        ProductService, SupplierService, CategoryService, WarehouseService, InventoryService, DashboardService,
-                 AiAssistantService, AuthService, InvoiceExtractionService (+ Interfaces/)
+                 ChatService, AuthService, InvoiceExtractionService, ShipmentService, PackageOrderService (+ Interfaces/)
 DTOs/            Request/response contracts, kept separate from entities
 Models/          EF Core entities
 Data/             InventoryDbContext (maps entities to snake_case Supabase tables)
@@ -200,14 +236,18 @@ features/
   warehouses/    List + create/edit form
   invoices/      Invoice Extractor — camera/gallery capture, AI preview, save/discard, saved-invoices list
   dashboard/     Summary cards, charts, heatmap, low-stock table, recent movements
-  ai/            AI Assistant chat panel + service
+  chat/          Chat window, floating widget, dedicated /chat page + service
+  package-orders/  List, create (product + warehouse picker with customization notes), detail + cancel
+  shipments/     List, create (address search + map picker + package-order linking), live-tracking detail page, map component
 ```
 
 ---
 
 ## 6. Extending the app
 
-- **New AI question types:** add a keyword rule to `ClassifyIntent()` in `AiAssistantService.cs`, add a new controlled function to `IInventoryService`, and map the new intent to it in `AskAsync()`.
+- **InvenChat behavior:** tune the SQL-generation and answer-summarization prompts in `ChatService.cs`, or swap the model via `Groq:ChatModel` in `appsettings.json` (any model enabled for your Groq account works — bigger/instruction-tuned models generally write better SQL).
+- **Shipments:** the routing backend is `Osrm:BaseUrl` in `appsettings.json` (defaults to the free public `router.project-osrm.org` demo server — fine for development/demo traffic, but swap in a self-hosted OSRM instance for real production volume, since the public one is rate-limited and not meant for heavy use). The average-speed fallback used when OSRM is unreachable lives in `ShipmentService.StraightLineFallback`.
+- **Package Orders:** the "tallied product" customization is currently a free-text note per line item (`PackageOrderItem.CustomizationNote`) — swap in structured attributes (e.g. a `product_customizations` table with typed key/value pairs) if you need those to be queryable or reportable later.
 - **New entities (e.g. Purchase Orders):** add the table in a new `database/03_*.sql` migration, an EF Core entity + DbSet, a service + controller, and a matching Angular feature folder — the same pattern used throughout.
 - **Roles/permissions:** `AppUser.Role` and the JWT `ClaimTypes.Role` claim are already in place; add `[Authorize(Roles = "Admin")]` to any controller/action that needs restricting.
 
@@ -218,7 +258,7 @@ features/
 - Passwords are hashed with BCrypt; the API never stores or returns plaintext passwords.
 - All inventory/product/supplier endpoints require a valid JWT (`[Authorize]`); only `/api/auth/login` and `/api/auth/register` are anonymous.
 - CORS is locked to the origins listed in `Cors:AllowedOrigins` (defaults to `http://localhost:4200`).
-- Angular never talks to Supabase directly — every request goes through the .NET API, which is also the only place the Supabase connection string and the Anthropic API key ever live.
+- Angular never talks to Supabase directly — every request goes through the .NET API, which is also the only place the Supabase connection string lives. InvenChat only ever runs LLM-generated read-only `SELECT` statements against a rolled-back transaction — no writes are possible from chat.
 - Change the seeded admin password (or delete that row) before using this anywhere beyond local development.
 
 ---

@@ -92,6 +92,86 @@ public class AppUser
     public DateTime CreatedAt { get; set; }
 }
 
+public class ChatConversation
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Title { get; set; } = "New chat";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+}
+
+public class ChatMessage
+{
+    public Guid Id { get; set; }
+    public Guid ConversationId { get; set; }
+    public string Role { get; set; } = string.Empty; // user | assistant
+    public string Content { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class Shipment
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string? Reference { get; set; }
+
+    public string OriginName { get; set; } = string.Empty;
+    public double OriginLat { get; set; }
+    public double OriginLng { get; set; }
+
+    public string DestinationName { get; set; } = string.Empty;
+    public double DestinationLat { get; set; }
+    public double DestinationLng { get; set; }
+
+    public string RouteGeoJson { get; set; } = "[]";
+    public decimal DistanceKm { get; set; }
+    public int DurationMinutes { get; set; }
+
+    public string Status { get; set; } = "InTransit"; // Pending | InTransit | Delivered | Cancelled
+
+    public DateTime StartedAt { get; set; }
+    public DateTime EstimatedArrivalAt { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+
+    public Guid? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class PackageOrder
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public Guid WarehouseId { get; set; }
+    public string Status { get; set; } = "Pending"; // Pending | Shipped | Cancelled
+    public string Priority { get; set; } = "Normal"; // Low | Normal | High
+    public string? Notes { get; set; }
+    public DateOnly? ExpectedShipDate { get; set; }
+    public Guid? ShipmentId { get; set; }
+    public DateTime? ShippedAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public Warehouse? Warehouse { get; set; }
+    public Shipment? Shipment { get; set; }
+    public ICollection<PackageOrderItem> Items { get; set; } = new List<PackageOrderItem>();
+}
+
+public class PackageOrderItem
+{
+    public Guid Id { get; set; }
+    public Guid PackageOrderId { get; set; }
+    public Guid ProductId { get; set; }
+    public int Quantity { get; set; }
+    public string? CustomizationNote { get; set; }
+
+    public Product? Product { get; set; }
+}
+
 public class Invoice
 {
     public Guid Id { get; set; }

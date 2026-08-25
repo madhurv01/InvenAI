@@ -40,6 +40,34 @@ export const routes: Routes = [
       {
         path: 'invoices',
         loadComponent: () => import('./features/invoices/components/invoice-extractor.component').then(m => m.InvoiceExtractorComponent)
+      },
+      {
+        path: 'chat',
+        loadComponent: () => import('./features/chat/components/chat-page.component').then(m => m.ChatPageComponent)
+      },
+      {
+        path: 'package-orders',
+        loadComponent: () => import('./features/package-orders/components/package-order-list.component').then(m => m.PackageOrderListComponent)
+      },
+      {
+        path: 'package-orders/new',
+        loadComponent: () => import('./features/package-orders/components/package-order-create.component').then(m => m.PackageOrderCreateComponent)
+      },
+      {
+        path: 'package-orders/:id',
+        loadComponent: () => import('./features/package-orders/components/package-order-detail.component').then(m => m.PackageOrderDetailComponent)
+      },
+      {
+        path: 'shipments',
+        loadComponent: () => import('./features/shipments/components/shipment-list.component').then(m => m.ShipmentListComponent)
+      },
+      {
+        path: 'shipments/new',
+        loadComponent: () => import('./features/shipments/components/shipment-create.component').then(m => m.ShipmentCreateComponent)
+      },
+      {
+        path: 'shipments/:id',
+        loadComponent: () => import('./features/shipments/components/shipment-detail.component').then(m => m.ShipmentDetailComponent)
       }
     ]
   },
