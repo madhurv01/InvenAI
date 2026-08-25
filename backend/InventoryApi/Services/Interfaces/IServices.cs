@@ -69,6 +69,24 @@ public interface IAuthService
     Task<AuthResponseDto> LoginAsync(LoginRequestDto dto);
 }
 
+public interface IShipmentService
+{
+    Task<ShipmentDetailDto> CreateAsync(CreateShipmentDto dto, Guid? userId);
+    Task<List<ShipmentSummaryDto>> GetAllAsync();
+    Task<ShipmentDetailDto> GetByIdAsync(Guid id);
+    Task<ShipmentDetailDto> UpdateStatusAsync(Guid id, string status);
+    Task DeleteAsync(Guid id);
+}
+
+public interface IPackageOrderService
+{
+    Task<PackageOrderDetailDto> CreateAsync(CreatePackageOrderDto dto, Guid? userId);
+    Task<List<PackageOrderSummaryDto>> GetAllAsync();
+    Task<List<PackageOrderPendingDto>> GetPendingAsync();
+    Task<PackageOrderDetailDto> GetByIdAsync(Guid id);
+    Task<PackageOrderDetailDto> CancelAsync(Guid id);
+}
+
 public interface IInvoiceExtractionService
 {
     Task<ExtractedInvoiceDto> ExtractAsync(ExtractInvoiceRequestDto request);

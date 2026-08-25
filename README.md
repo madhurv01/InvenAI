@@ -14,6 +14,7 @@ A focused, modular inventory management web app — not a full ERP.
 - **Backend:** C# / ASP.NET Core 8 Web API
 - **Database:** Supabase PostgreSQL (only)
 - **AI:** InvenChat — free, open-source LLM (via Groq's fast inference API) doing text-to-SQL over the Supabase schema
+- **Maps:** Leaflet + OpenStreetMap for shipment tracking, OSRM for real road routing, Nominatim for address search — all free, open-source, no API key or billing
 - **Auth:** JWT (email + password, BCrypt-hashed)
 
 ```
@@ -34,6 +35,8 @@ InventoryApp/
    - `database/02_seed.sql` — optional sample data (products, suppliers, stock, and a demo admin login).
    - `database/04_invoices.sql` — Invoice Extractor storage.
    - `database/05_chat_history.sql` — Chat conversation history (`chat_conversations`, `chat_messages`).
+   - `database/06_shipments.sql` — Shipment tracking (`shipments`).
+   - `database/07_package_orders.sql` — Package Orders (`package_orders`, `package_order_items`).
 
 The seed script creates a default login:
 - **Email:** `admin@inventory.local`
@@ -171,6 +174,38 @@ Photo (compressed client-side to ≤1600px JPEG)
 
 A "Saved Invoices" tab lists everything saved, with PDF download and delete. No separate object storage is used — the generated PDF lives directly in the `invoices` table alongside the extracted data (`database/04_invoices.sql`).
 
+### Package Orders
+Reserve products from a specific warehouse ahead of shipping them — the bridge between Inventory and Shipments:
+
+```
+Pick a warehouse + one or more products, each with a quantity and an optional
+free-text customization note (a "tallied" variant of that product — e.g. "blue,
+engraved, gift-wrapped" — still counted against the same stock, just annotated)
+   → Stock is validated per product (aggregated across duplicate lines) and, if
+     sufficient, deducted immediately as a stock_movements OUT entry per line
+     (database/07_package_orders.sql) — same mechanism as a manual inventory movement
+   → Order sits Pending until it's linked to a shipment
+   → Cancelling a Pending order reverses the deduction (an IN movement restocks it)
+```
+
+The **Package Orders** list (`/package-orders`) shows every order with status, priority, and item/quantity counts. **New Package Order** (`/package-orders/new`) lets you add any number of line items, each an existing product + quantity + optional customization note, plus order-level priority/notes/expected ship date. The detail page shows the full line-item breakdown and, once shipped, links straight to the live-tracking shipment.
+
+### Shipments (live map tracking)
+Create a shipment order from any two points and watch it move on a real map — fully free/open-source, no Google Maps or billing involved. A shipment can optionally carry a **Pending Package Order** (linked from the New Shipment page, or via "🚢 Ship this Order" on a package order's detail page) — selecting one auto-fills the origin from its warehouse and marks the package order **Shipped** once the shipment is created (deleting the shipment frees it back to Pending):
+
+```
+Pick origin + destination (address search via Nominatim, or click/drag pins on the map) —
+optionally auto-filled from a linked Package Order's warehouse
+   → Server asks OSRM (free public routing API) for the real road route, distance, and ETA
+   → Route + timings stored once (database/06_shipments.sql)
+   → Live map (Leaflet + OpenStreetMap tiles) draws the route and animates a truck marker
+     along it in real time, based on elapsed time vs. estimated arrival
+   → Status auto-transitions InTransit → Delivered when the ETA passes (or mark
+     Delivered/Cancelled manually at any time)
+```
+
+The **Shipments** list (`/shipments`) shows every order with a live progress bar and status badge (polls every 15s), plus which package order (if any) it's carrying. **New Shipment** (`/shipments/new`) is a two-pane picker: address autocomplete + "pick on map" + draggable pins for both origin and destination. The **detail page** (`/shipments/:id`) shows the live-animated map alongside an elapsed/remaining countdown timer that ticks every second — no backend polling needed for the timer itself, since progress is derived purely from `startedAt`/`estimatedArrivalAt` on the client.
+
 ---
 
 ## 5. Project structure reference
@@ -178,9 +213,10 @@ A "Saved Invoices" tab lists everything saved, with PDF download and delete. No 
 **Backend** (`Controllers → Services → EF Core/Supabase`):
 ```
 Controllers/     ProductsController, SuppliersController, InventoryController, WarehousesController,
-                 DashboardController, ChatController, AuthController, CategoriesController, InvoicesController
+                 DashboardController, ChatController, AuthController, CategoriesController, InvoicesController,
+                 ShipmentsController, PackageOrdersController
 Services/        ProductService, SupplierService, CategoryService, WarehouseService, InventoryService, DashboardService,
-                 ChatService, AuthService, InvoiceExtractionService (+ Interfaces/)
+                 ChatService, AuthService, InvoiceExtractionService, ShipmentService, PackageOrderService (+ Interfaces/)
 DTOs/            Request/response contracts, kept separate from entities
 Models/          EF Core entities
 Data/             InventoryDbContext (maps entities to snake_case Supabase tables)
@@ -201,6 +237,8 @@ features/
   invoices/      Invoice Extractor — camera/gallery capture, AI preview, save/discard, saved-invoices list
   dashboard/     Summary cards, charts, heatmap, low-stock table, recent movements
   chat/          Chat window, floating widget, dedicated /chat page + service
+  package-orders/  List, create (product + warehouse picker with customization notes), detail + cancel
+  shipments/     List, create (address search + map picker + package-order linking), live-tracking detail page, map component
 ```
 
 ---
@@ -208,6 +246,8 @@ features/
 ## 6. Extending the app
 
 - **InvenChat behavior:** tune the SQL-generation and answer-summarization prompts in `ChatService.cs`, or swap the model via `Groq:ChatModel` in `appsettings.json` (any model enabled for your Groq account works — bigger/instruction-tuned models generally write better SQL).
+- **Shipments:** the routing backend is `Osrm:BaseUrl` in `appsettings.json` (defaults to the free public `router.project-osrm.org` demo server — fine for development/demo traffic, but swap in a self-hosted OSRM instance for real production volume, since the public one is rate-limited and not meant for heavy use). The average-speed fallback used when OSRM is unreachable lives in `ShipmentService.StraightLineFallback`.
+- **Package Orders:** the "tallied product" customization is currently a free-text note per line item (`PackageOrderItem.CustomizationNote`) — swap in structured attributes (e.g. a `product_customizations` table with typed key/value pairs) if you need those to be queryable or reportable later.
 - **New entities (e.g. Purchase Orders):** add the table in a new `database/03_*.sql` migration, an EF Core entity + DbSet, a service + controller, and a matching Angular feature folder — the same pattern used throughout.
 - **Roles/permissions:** `AppUser.Role` and the JWT `ClaimTypes.Role` claim are already in place; add `[Authorize(Roles = "Admin")]` to any controller/action that needs restricting.
 

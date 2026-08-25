@@ -71,6 +71,12 @@ const DEFAULT_WIDTH = 260;
           <a routerLink="/invoices" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Invoice Extractor' : ''">
             <span class="nav-icon">🧾</span> @if (!collapsed()) { <span>Invoice Extractor</span> }
           </a>
+          <a routerLink="/package-orders" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Package Orders' : ''">
+            <span class="nav-icon">📦</span> @if (!collapsed()) { <span>Package Orders</span> }
+          </a>
+          <a routerLink="/shipments" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Shipments' : ''">
+            <span class="nav-icon">🚢</span> @if (!collapsed()) { <span>Shipments</span> }
+          </a>
           <a routerLink="/chat" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'InvenChat' : ''">
             <span class="nav-icon">💬</span> @if (!collapsed()) { <span>InvenChat</span> }
           </a>

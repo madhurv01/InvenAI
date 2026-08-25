@@ -185,6 +185,165 @@ public class ChatConversationDetailDto
     public List<ChatMessageDto> Messages { get; set; } = new();
 }
 
+// ---------- Shipments ----------
+public class CreateShipmentDto
+{
+    [StringLength(200)]
+    public string? Reference { get; set; }
+
+    /// <summary>Optional — link a Pending Package Order to this shipment. It's marked Shipped once the shipment is created.</summary>
+    public Guid? PackageOrderId { get; set; }
+
+    [Required, StringLength(300)]
+    public string OriginName { get; set; } = string.Empty;
+    [Required]
+    public double OriginLat { get; set; }
+    [Required]
+    public double OriginLng { get; set; }
+
+    [Required, StringLength(300)]
+    public string DestinationName { get; set; } = string.Empty;
+    [Required]
+    public double DestinationLat { get; set; }
+    [Required]
+    public double DestinationLng { get; set; }
+}
+
+public class ShipmentSummaryDto
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string? Reference { get; set; }
+    public string? PackageOrderNumber { get; set; }
+    public string OriginName { get; set; } = string.Empty;
+    public string DestinationName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public decimal DistanceKm { get; set; }
+    public double ProgressPercent { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime EstimatedArrivalAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class ShipmentDetailDto
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string? Reference { get; set; }
+
+    public Guid? PackageOrderId { get; set; }
+    public string? PackageOrderNumber { get; set; }
+
+    public string OriginName { get; set; } = string.Empty;
+    public double OriginLat { get; set; }
+    public double OriginLng { get; set; }
+
+    public string DestinationName { get; set; } = string.Empty;
+    public double DestinationLat { get; set; }
+    public double DestinationLng { get; set; }
+
+    public List<double[]> Route { get; set; } = new(); // [ [lat,lng], ... ]
+    public decimal DistanceKm { get; set; }
+    public int DurationMinutes { get; set; }
+
+    public string Status { get; set; } = string.Empty;
+    public double ProgressPercent { get; set; }
+
+    public DateTime StartedAt { get; set; }
+    public DateTime EstimatedArrivalAt { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class UpdateShipmentStatusDto
+{
+    [Required]
+    public string Status { get; set; } = string.Empty; // Delivered | Cancelled
+}
+
+// ---------- Package Orders ----------
+public class CreatePackageOrderItemDto
+{
+    [Required]
+    public Guid ProductId { get; set; }
+    [Required, Range(1, int.MaxValue)]
+    public int Quantity { get; set; }
+    [StringLength(500)]
+    public string? CustomizationNote { get; set; }
+}
+
+public class CreatePackageOrderDto
+{
+    [Required]
+    public Guid WarehouseId { get; set; }
+
+    public string Priority { get; set; } = "Normal"; // Low | Normal | High
+
+    [StringLength(500)]
+    public string? Notes { get; set; }
+
+    public DateOnly? ExpectedShipDate { get; set; }
+
+    [Required, MinLength(1)]
+    public List<CreatePackageOrderItemDto> Items { get; set; } = new();
+}
+
+public class PackageOrderItemDto
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string Sku { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public string? CustomizationNote { get; set; }
+}
+
+public class PackageOrderSummaryDto
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string WarehouseName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public int ItemCount { get; set; }
+    public int TotalQuantity { get; set; }
+    public DateOnly? ExpectedShipDate { get; set; }
+    public string? ShipmentOrderNumber { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>Slim shape used to populate the "link a package order" picker on the New Shipment page.</summary>
+public class PackageOrderPendingDto
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public Guid WarehouseId { get; set; }
+    public string WarehouseName { get; set; } = string.Empty;
+    public string? WarehouseLocation { get; set; }
+    public int ItemCount { get; set; }
+    public int TotalQuantity { get; set; }
+    public string Priority { get; set; } = string.Empty;
+}
+
+public class PackageOrderDetailDto
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public Guid WarehouseId { get; set; }
+    public string WarehouseName { get; set; } = string.Empty;
+    public string? WarehouseLocation { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public DateOnly? ExpectedShipDate { get; set; }
+    public List<PackageOrderItemDto> Items { get; set; } = new();
+    public Guid? ShipmentId { get; set; }
+    public string? ShipmentOrderNumber { get; set; }
+    public DateTime? ShippedAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 // ---------- Auth ----------
 public class LoginRequestDto
 {
