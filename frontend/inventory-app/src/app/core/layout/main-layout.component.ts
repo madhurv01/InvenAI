@@ -80,6 +80,9 @@ const DEFAULT_WIDTH = 260;
           <a routerLink="/chat" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'InvenChat' : ''">
             <span class="nav-icon">💬</span> @if (!collapsed()) { <span>InvenChat</span> }
           </a>
+          <a routerLink="/workflows" routerLinkActive="active" class="nav-link" [title]="collapsed() ? 'Automate Workflow' : ''">
+            <span class="nav-icon">⚡</span> @if (!collapsed()) { <span>Automate Workflow</span> }
+          </a>
         </nav>
 
         @if (!collapsed()) {

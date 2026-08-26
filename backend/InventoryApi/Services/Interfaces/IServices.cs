@@ -87,6 +87,24 @@ public interface IPackageOrderService
     Task<PackageOrderDetailDto> CancelAsync(Guid id);
 }
 
+public interface IEmailService
+{
+    /// <summary>Sends an email via Gmail SMTP. Returns false (and logs a warning) instead of throwing if Email:Username/AppPassword aren't configured, so callers can record that in a workflow's activity log.</summary>
+    Task<bool> SendAsync(string toEmail, string subject, string body);
+}
+
+public interface IWorkflowService
+{
+    Task<WorkflowDetailDto> CreateAlertAsync(CreateAlertWorkflowDto dto, Guid? userId);
+    Task<WorkflowDetailDto> CreateTriggerAsync(CreateTriggerWorkflowDto dto, Guid? userId);
+    Task<WorkflowDetailDto> CreateSupplyChainAsync(CreateSupplyChainWorkflowDto dto, Guid? userId);
+    Task<List<WorkflowSummaryDto>> GetAllAsync();
+    Task<WorkflowDetailDto> GetByIdAsync(Guid id);
+    Task<WorkflowDetailDto> PauseAsync(Guid id);
+    Task<WorkflowDetailDto> ResumeAsync(Guid id);
+    Task DeleteAsync(Guid id);
+}
+
 public interface IInvoiceExtractionService
 {
     Task<ExtractedInvoiceDto> ExtractAsync(ExtractInvoiceRequestDto request);

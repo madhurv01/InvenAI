@@ -172,6 +172,32 @@ public class PackageOrderItem
     public Product? Product { get; set; }
 }
 
+public class Workflow
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = string.Empty; // Alert | Trigger | SupplyChain
+    public string Name { get; set; } = string.Empty;
+    public string Status { get; set; } = "Active"; // Active | Paused | Completed | Failed
+    public string Config { get; set; } = "{}"; // JSON, type-specific, set at creation
+    public string State { get; set; } = "{}"; // JSON, mutated by the execution engine (dedup bookkeeping)
+    public Guid? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime? LastRunAt { get; set; }
+    public DateTime? LastTriggeredAt { get; set; }
+
+    public ICollection<WorkflowEvent> Events { get; set; } = new List<WorkflowEvent>();
+}
+
+public class WorkflowEvent
+{
+    public Guid Id { get; set; }
+    public Guid WorkflowId { get; set; }
+    public string EventType { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
 public class Invoice
 {
     public Guid Id { get; set; }

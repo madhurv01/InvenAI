@@ -68,6 +68,26 @@ export const routes: Routes = [
       {
         path: 'shipments/:id',
         loadComponent: () => import('./features/shipments/components/shipment-detail.component').then(m => m.ShipmentDetailComponent)
+      },
+      {
+        path: 'workflows',
+        loadComponent: () => import('./features/workflows/components/workflow-list.component').then(m => m.WorkflowListComponent)
+      },
+      {
+        path: 'workflows/new/alert',
+        loadComponent: () => import('./features/workflows/components/workflow-create-alert.component').then(m => m.WorkflowCreateAlertComponent)
+      },
+      {
+        path: 'workflows/new/trigger',
+        loadComponent: () => import('./features/workflows/components/workflow-create-trigger.component').then(m => m.WorkflowCreateTriggerComponent)
+      },
+      {
+        path: 'workflows/new/supplychain',
+        loadComponent: () => import('./features/workflows/components/workflow-create-supplychain.component').then(m => m.WorkflowCreateSupplyChainComponent)
+      },
+      {
+        path: 'workflows/:id',
+        loadComponent: () => import('./features/workflows/components/workflow-detail.component').then(m => m.WorkflowDetailComponent)
       }
     ]
   },
