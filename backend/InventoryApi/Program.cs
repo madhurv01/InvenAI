@@ -28,6 +28,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IInvoiceExtractionService, InvoiceExtractionService>();
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
 builder.Services.AddScoped<IPackageOrderService, PackageOrderService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddHostedService<WorkflowExecutionService>();
 
 builder.Services.AddHttpClient("Groq", client =>
 {

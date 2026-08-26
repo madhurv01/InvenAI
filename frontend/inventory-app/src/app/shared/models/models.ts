@@ -375,3 +375,65 @@ export interface ApiError {
   detail?: string;
   statusCode: number;
 }
+
+// ---------- Automate Workflow ----------
+export type WorkflowType = 'Alert' | 'Trigger' | 'SupplyChain';
+export type WorkflowStatus = 'Active' | 'Paused' | 'Completed' | 'Failed';
+
+export interface WorkflowSummary {
+  id: string;
+  type: WorkflowType;
+  name: string;
+  status: WorkflowStatus;
+  summary: string;
+  createdAt: string;
+  lastRunAt?: string;
+  lastTriggeredAt?: string;
+}
+
+export interface WorkflowEventItem {
+  eventType: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface WorkflowDetail {
+  id: string;
+  type: WorkflowType;
+  name: string;
+  status: WorkflowStatus;
+  config: Record<string, any>;
+  events: WorkflowEventItem[];
+  createdAt: string;
+  lastRunAt?: string;
+  lastTriggeredAt?: string;
+}
+
+export interface CreateAlertWorkflowRequest {
+  name: string;
+  warehouseId: string;
+  productId?: string;
+  thresholdQuantity: number;
+  recipientEmail: string;
+}
+
+export interface CreateTriggerWorkflowRequest {
+  name: string;
+  packageOrderId: string;
+  scheduledAt: string;
+  originName: string;
+  originLat: number;
+  originLng: number;
+  destinationName: string;
+  destinationLat: number;
+  destinationLng: number;
+  recipientEmail: string;
+}
+
+export interface CreateSupplyChainWorkflowRequest {
+  name: string;
+  productId: string;
+  warehouseId: string;
+  thresholdQuantity: number;
+  recipientEmail: string;
+}

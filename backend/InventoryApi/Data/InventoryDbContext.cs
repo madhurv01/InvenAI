@@ -20,6 +20,8 @@ public class InventoryDbContext : DbContext
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<PackageOrder> PackageOrders => Set<PackageOrder>();
     public DbSet<PackageOrderItem> PackageOrderItems => Set<PackageOrderItem>();
+    public DbSet<Workflow> Workflows => Set<Workflow>();
+    public DbSet<WorkflowEvent> WorkflowEvents => Set<WorkflowEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -211,6 +213,36 @@ public class InventoryDbContext : DbContext
             e.Property(x => x.CustomizationNote).HasColumnName("customization_note");
 
             e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Workflow>(e =>
+        {
+            e.ToTable("workflows");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Type).HasColumnName("type");
+            e.Property(x => x.Name).HasColumnName("name");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.Config).HasColumnName("config").HasColumnType("jsonb");
+            e.Property(x => x.State).HasColumnName("state").HasColumnType("jsonb");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.Property(x => x.LastRunAt).HasColumnName("last_run_at");
+            e.Property(x => x.LastTriggeredAt).HasColumnName("last_triggered_at");
+
+            e.HasMany(x => x.Events).WithOne().HasForeignKey(x => x.WorkflowId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WorkflowEvent>(e =>
+        {
+            e.ToTable("workflow_events");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.WorkflowId).HasColumnName("workflow_id");
+            e.Property(x => x.EventType).HasColumnName("event_type");
+            e.Property(x => x.Message).HasColumnName("message");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
 
         modelBuilder.Entity<Invoice>(e =>
