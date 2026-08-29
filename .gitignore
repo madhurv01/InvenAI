@@ -19,6 +19,9 @@ certs/
 .vs/
 .vscode/
 
+# Claude Code agent worktrees (temporary, machine-local)
+.claude/
+
 # OS
 Thumbs.db
 .DS_Store

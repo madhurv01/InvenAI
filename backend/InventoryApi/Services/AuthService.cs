@@ -47,7 +47,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto dto)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email.Trim().ToLowerInvariant())
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == dto.Email.Trim().ToLowerInvariant())
             ?? throw new UnauthorizedAccessException("Invalid email or password.");
 
         if (!user.IsActive)

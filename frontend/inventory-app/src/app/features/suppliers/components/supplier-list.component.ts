@@ -40,7 +40,7 @@ import { SupplierFormComponent } from './supplier-form.component';
             </tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let s of suppliers()">
+            <tr *ngFor="let s of suppliers(); trackBy: trackById">
               <td><strong>{{ s.name }}</strong></td>
               <td>{{ s.contactPerson || '—' }}</td>
               <td>{{ s.email || '—' }}</td>
@@ -101,6 +101,8 @@ import { SupplierFormComponent } from './supplier-form.component';
   `]
 })
 export class SupplierListComponent implements OnInit {
+  trackById = (_: number, item: Supplier) => item.id;
+
   suppliers = signal<Supplier[]>([]);
   loading = signal(true);
   errorMessage = signal('');

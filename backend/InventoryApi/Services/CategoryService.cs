@@ -4,21 +4,34 @@ using InventoryApi.Middleware;
 using InventoryApi.Models;
 using InventoryApi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace InventoryApi.Services;
 
 public class CategoryService : ICategoryService
 {
-    private readonly InventoryDbContext _db;
+    private const string CacheKey = "categories:all";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
 
-    public CategoryService(InventoryDbContext db)
+    private readonly InventoryDbContext _db;
+    private readonly IMemoryCache _cache;
+
+    public CategoryService(InventoryDbContext db, IMemoryCache cache)
     {
         _db = db;
+        _cache = cache;
     }
 
+    // Categories/products rarely change relative to how often every product/package-order/
+    // workflow form re-fetches this list — a short cache collapses repeated identical queries
+    // without meaningfully delaying visibility of real changes (self-heals within 30s even for
+    // changes this service doesn't directly invalidate, e.g. a product's category reassignment).
     public async Task<List<CategoryDto>> GetAllAsync()
     {
-        return await _db.Categories
+        if (_cache.TryGetValue(CacheKey, out List<CategoryDto>? cached) && cached != null)
+            return cached;
+
+        var result = await _db.Categories
             .AsNoTracking()
             .OrderBy(c => c.Name)
             .Select(c => new CategoryDto
@@ -30,6 +43,9 @@ public class CategoryService : ICategoryService
                 ProductCount = c.Products.Count
             })
             .ToListAsync();
+
+        _cache.Set(CacheKey, result, CacheDuration);
+        return result;
     }
 
     public async Task<CategoryDto> CreateAsync(CreateCategoryDto dto)
@@ -48,6 +64,7 @@ public class CategoryService : ICategoryService
 
         _db.Categories.Add(category);
         await _db.SaveChangesAsync();
+        _cache.Remove(CacheKey);
 
         return new CategoryDto { Id = category.Id, Name = category.Name, Description = category.Description, CreatedAt = category.CreatedAt, ProductCount = 0 };
     }
@@ -64,6 +81,7 @@ public class CategoryService : ICategoryService
         category.Name = dto.Name.Trim();
         category.Description = dto.Description;
         await _db.SaveChangesAsync();
+        _cache.Remove(CacheKey);
 
         var productCount = await _db.Products.CountAsync(p => p.CategoryId == id);
         return new CategoryDto { Id = category.Id, Name = category.Name, Description = category.Description, CreatedAt = category.CreatedAt, ProductCount = productCount };
@@ -80,5 +98,6 @@ public class CategoryService : ICategoryService
 
         _db.Categories.Remove(category);
         await _db.SaveChangesAsync();
+        _cache.Remove(CacheKey);
     }
 }

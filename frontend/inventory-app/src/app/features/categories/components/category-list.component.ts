@@ -30,7 +30,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
             <tr><th>Name</th><th>Description</th><th>Products</th><th></th></tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let c of categories()">
+            <tr *ngFor="let c of categories(); trackBy: trackById">
               <td><strong>{{ c.name }}</strong></td>
               <td>{{ c.description || '—' }}</td>
               <td><span class="badge badge-neutral">{{ c.productCount }}</span></td>
@@ -90,6 +90,8 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
   `]
 })
 export class CategoryListComponent implements OnInit {
+  trackById = (_: number, item: Category) => item.id;
+
   categories = signal<Category[]>([]);
   loading = signal(true);
   errorMessage = signal('');

@@ -97,6 +97,7 @@ public class ShipmentService : IShipmentService
 
         var shipmentIds = shipments.Select(s => s.Id).ToList();
         var packageOrderNumbers = await _db.PackageOrders
+            .AsNoTracking()
             .Where(o => o.ShipmentId != null && shipmentIds.Contains(o.ShipmentId!.Value))
             .ToDictionaryAsync(o => o.ShipmentId!.Value, o => o.OrderNumber);
 
@@ -125,7 +126,7 @@ public class ShipmentService : IShipmentService
         if (ResolveLiveStatus(shipment, DateTime.UtcNow))
             await _db.SaveChangesAsync();
 
-        var packageOrder = await _db.PackageOrders.FirstOrDefaultAsync(o => o.ShipmentId == id);
+        var packageOrder = await _db.PackageOrders.AsNoTracking().FirstOrDefaultAsync(o => o.ShipmentId == id);
 
         var route = JsonSerializer.Deserialize<List<double[]>>(shipment.RouteGeoJson) ?? new();
         return ToDetailDto(shipment, route, packageOrder?.OrderNumber, packageOrder?.Id);
@@ -149,7 +150,7 @@ public class ShipmentService : IShipmentService
 
         await _db.SaveChangesAsync();
 
-        var packageOrder = await _db.PackageOrders.FirstOrDefaultAsync(o => o.ShipmentId == id);
+        var packageOrder = await _db.PackageOrders.AsNoTracking().FirstOrDefaultAsync(o => o.ShipmentId == id);
         var route = JsonSerializer.Deserialize<List<double[]>>(shipment.RouteGeoJson) ?? new();
         return ToDetailDto(shipment, route, packageOrder?.OrderNumber, packageOrder?.Id);
     }

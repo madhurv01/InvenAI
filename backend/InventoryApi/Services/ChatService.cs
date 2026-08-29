@@ -101,6 +101,7 @@ stock_movements(id uuid, product_id uuid, warehouse_id uuid, movement_type text,
     public async Task<List<ChatConversationSummaryDto>> GetConversationsAsync(Guid userId)
     {
         return await _db.ChatConversations
+            .AsNoTracking()
             .Where(c => c.UserId == userId)
             .OrderByDescending(c => c.UpdatedAt)
             .Select(c => new ChatConversationSummaryDto { Id = c.Id, Title = c.Title, UpdatedAt = c.UpdatedAt })
@@ -110,6 +111,7 @@ stock_movements(id uuid, product_id uuid, warehouse_id uuid, movement_type text,
     public async Task<ChatConversationDetailDto> GetConversationAsync(Guid userId, Guid conversationId)
     {
         var conversation = await _db.ChatConversations
+            .AsNoTracking()
             .Include(c => c.Messages)
             .FirstOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId)
             ?? throw new NotFoundException("Conversation not found.");

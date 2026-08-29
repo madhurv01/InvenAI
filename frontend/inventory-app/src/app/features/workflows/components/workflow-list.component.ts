@@ -72,7 +72,7 @@ const TYPE_OPTIONS: WorkflowTypeOption[] = [
             </tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let w of workflows()" class="clickable-row" (click)="router.navigate(['/workflows', w.id])">
+            <tr *ngFor="let w of workflows(); trackBy: trackById" class="clickable-row" (click)="router.navigate(['/workflows', w.id])">
               <td>
                 <span class="type-chip" [class.type-alert]="w.type === 'Alert'" [class.type-trigger]="w.type === 'Trigger'" [class.type-supplychain]="w.type === 'SupplyChain'">
                   {{ typeIcon(w.type) }} {{ w.type === 'SupplyChain' ? 'Supply Chain' : w.type }}
@@ -179,6 +179,8 @@ const TYPE_OPTIONS: WorkflowTypeOption[] = [
   `]
 })
 export class WorkflowListComponent implements OnInit {
+  trackById = (_: number, item: WorkflowSummary) => item.id;
+
   workflows = signal<WorkflowSummary[]>([]);
   loading = signal(true);
   errorMessage = signal('');
