@@ -39,6 +39,7 @@ InventoryApp/
    - `database/06_shipments.sql` — Shipment tracking (`shipments`).
    - `database/07_package_orders.sql` — Package Orders (`package_orders`, `package_order_items`).
    - `database/08_workflows.sql` — Automate Workflow (`workflows`, `workflow_events`).
+   - `database/09_test_data_batch2.sql` — optional: 12 more products (+ inventory/movements), 4 package orders, 4 shipments, and 2 workflows for exercising every module with realistic data. Purely additive, not required for the app to run.
 
 The seed script creates a default login:
 - **Email:** `admin@inventory.local`
