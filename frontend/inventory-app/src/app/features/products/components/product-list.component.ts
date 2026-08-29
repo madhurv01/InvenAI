@@ -57,7 +57,7 @@ import { ProductFormComponent } from './product-form.component';
             </tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let p of products()">
+            <tr *ngFor="let p of products(); trackBy: trackById">
               <td><strong>{{ p.name }}</strong></td>
               <td>{{ p.sku }}</td>
               <td>{{ p.categoryName || '—' }}</td>
@@ -128,6 +128,8 @@ import { ProductFormComponent } from './product-form.component';
   `]
 })
 export class ProductListComponent implements OnInit {
+  trackById = (_: number, item: Product) => item.id;
+
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   suppliers = signal<Supplier[]>([]);

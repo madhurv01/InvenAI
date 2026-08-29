@@ -285,7 +285,71 @@ features/
 
 ---
 
-## 7. Security notes
+## 7. Performance & scaling
+
+Applied so far (all verified not to change behavior):
+
+- **Response compression** (Brotli/Gzip) on every API response — enabled in `Program.cs`, no client changes needed.
+- **`.AsNoTracking()`** on every read-only EF Core query that doesn't later save the same entities (across `ChatService`, `ShipmentService`, `AuthService`) — cuts EF's change-tracking overhead on requests that never write.
+- **Short-TTL in-memory cache** (30s, `IMemoryCache`) in front of `CategoryService.GetAllAsync()`, with explicit invalidation on create/update/delete — this list is re-fetched by nearly every product/package-order/workflow form. Warehouses and Suppliers are deliberately **not** cached the same way: their stats change on almost every inventory action, and stale numbers there would be more noticeable/harmful than the DB round-trip they'd save.
+- **`trackBy`** on every major Angular list table (Products, Inventory, Shipments, Package Orders, Workflows, Suppliers, Categories, Warehouses) — Angular patches only changed rows instead of destroying/rebuilding the whole table. Matters most for the Shipments list, which polls every 15s.
+- **Router preloading** (`withPreloading(PreloadAllModules)`) and **simplified OSRM route geometry** (from an earlier pass) — lazy module chunks download in the background after first load, and shipment routes are ~150x smaller over the wire with no visible difference on the map.
+
+Where to go next if traffic grows:
+- **Database connection pool**: Supabase's pooler (`Port=6543`, PgBouncer transaction mode) is already in use — the main lever left is `Maximum Pool Size` in the Npgsql connection string if you see pool-exhaustion errors under load.
+- **`WorkflowExecutionService` and horizontal scaling**: this background poller runs in-process and assumes a single API instance. If you ever scale the API to multiple instances behind a load balancer, every instance would poll and could double-send alert/report emails. Before scaling out, either move this to a single dedicated worker process/instance, or add a lightweight distributed lock (e.g. a `pg_advisory_lock` around each polling cycle) so only one instance executes workflows at a time.
+- **Read replicas / caching layer**: not needed at this app's scale — Supabase's connection pooler and the in-memory cache above cover the realistic load for a small-to-mid-size team. Revisit only if you see sustained high query latency in Supabase's dashboard.
+- **CDN for the frontend**: any static host in section 8 below (Cloudflare Pages, Netlify, Vercel) already serves the Angular build from a global CDN with far-future cache headers on hashed asset filenames — no extra work needed.
+
+---
+
+## 8. Deployment
+
+The stack splits cleanly into three independently-deployable pieces — Supabase already hosts the database (section 1), so this covers the other two. Recommended for a **free** setup:
+
+| Piece | Recommended host | Why |
+|---|---|---|
+| Angular build (static files) | **Cloudflare Pages**, Netlify, or Vercel | Free, global CDN, auto HTTPS, deploys straight from a GitHub push. Any static host works identically since the Angular build is just files. |
+| .NET API | **Fly.io** (free allowance) | Runs as a normal always-on process — important because `WorkflowExecutionService` is a background timer, and hosts that spin down on inactivity (e.g. Render's free web service tier) would silently stop running it between requests. Render/Railway work too if you're on a paid tier that stays always-on. |
+
+### 8.1 Backend
+
+1. A `Dockerfile` and `.dockerignore` are already included at `backend/InventoryApi/Dockerfile` — any container host can build and run it as-is (listens on port 8080).
+2. On your chosen host, set these as **environment variables** (never commit real values — this replaces `appsettings.Development.json` in production):
+   ```
+   ASPNETCORE_ENVIRONMENT=Production
+   ConnectionStrings__SupabaseConnection=<your Supabase pooler connection string>
+   Jwt__SecretKey=<a long random secret>
+   Groq__ApiKey=<your Groq key>
+   Email__Username=<your Gmail address>
+   Email__AppPassword=<your Gmail App Password>
+   Cors__AllowedOrigins__0=<your deployed frontend URL, e.g. https://invenai.pages.dev>
+   ```
+   (`__` is how ASP.NET Core maps environment variables to nested `appsettings.json` sections.)
+3. Example with the Fly.io CLI, from `backend/InventoryApi/`:
+   ```
+   fly launch --no-deploy          # generates fly.toml, pick a region/app name
+   fly secrets set ConnectionStrings__SupabaseConnection="..." Jwt__SecretKey="..." Groq__ApiKey="..." Email__Username="..." Email__AppPassword="..." Cors__AllowedOrigins__0="https://your-frontend-url"
+   fly deploy
+   ```
+4. **Update CORS before deploying the frontend** — it must list the exact deployed frontend origin (`Cors:AllowedOrigins`), or every API request from the browser will be blocked.
+
+### 8.2 Frontend
+
+1. **Set the real backend URL first** — edit `frontend/inventory-app/src/environments/environment.prod.ts` and replace the placeholder with your deployed backend's URL (e.g. `https://your-app.fly.dev/api`). Production builds (`ng build --configuration production` — the default) now correctly use this file via `angular.json`'s `fileReplacements`.
+2. Build: `cd frontend/inventory-app && npm run build` — output lands in `dist/inventory-app`.
+3. Deploy that folder to your static host (e.g. Cloudflare Pages: connect the GitHub repo, set build command `npm run build` and output directory `dist/inventory-app`, root directory `frontend/inventory-app`).
+4. Because this is a client-side-routed Angular app, configure the host to serve `index.html` for unmatched routes (a SPA fallback) — Cloudflare Pages/Netlify/Vercel all do this automatically for Angular projects; if using a custom static server, add an explicit rewrite rule.
+
+### 8.3 After deploying
+
+- Log in with the seeded admin account, then **change its password immediately** (see Security notes below) — it's a known default that ships in the seed script.
+- Verify a real email actually sends from a workflow (Automate Workflow module) — Gmail SMTP occasionally needs the App Password regenerated if 2-Step Verification settings changed after it was first created.
+- Watch Supabase's dashboard (Database → Reports) for connection/query load once real users are on it; that's the earliest signal you'd need any of the scaling steps in section 7.
+
+---
+
+## 9. Security notes
 
 - Passwords are hashed with BCrypt; the API never stores or returns plaintext passwords.
 - All inventory/product/supplier endpoints require a valid JWT (`[Authorize]`); only `/api/auth/login` and `/api/auth/register` are anonymous.
@@ -295,7 +359,7 @@ features/
 
 ---
 
-## 8. Git workflow
+## 10. Git workflow
 
 - **`main`** — starts as an empty commit (no code) and only receives changes via merged pull requests from feature branches. Never commit directly to it.
 - **`Webdevelopment`** — the active development branch; all work happens here (and future feature branches should branch off it) before being merged into `main` via a PR.

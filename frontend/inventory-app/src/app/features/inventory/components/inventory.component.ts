@@ -46,7 +46,7 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
           <tr><th>Product</th><th>SKU</th><th>Warehouse</th><th>On Hand</th><th>Minimum</th><th>Status</th></tr>
         </thead>
         <tbody class="stagger">
-          <tr *ngFor="let item of stock()">
+          <tr *ngFor="let item of stock(); trackBy: trackByStock">
             <td>{{ item.productName }}</td>
             <td>{{ item.sku }}</td>
             <td>{{ item.warehouseName }}</td>
@@ -69,7 +69,7 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
           <tr><th>Type</th><th>Product</th><th>Qty</th><th>Warehouse</th><th>Reason</th><th>By</th><th>When</th></tr>
         </thead>
         <tbody class="stagger">
-          <tr *ngFor="let m of movements()">
+          <tr *ngFor="let m of movements(); trackBy: trackByMovement">
             <td>
               <span class="badge"
                     [class.badge-success]="m.movementType === 'IN'"
@@ -107,6 +107,9 @@ import { StockMovementFormComponent } from './stock-movement-form.component';
   `]
 })
 export class InventoryComponent implements OnInit {
+  trackByStock = (_: number, item: InventoryItem) => item.productId + '_' + item.warehouseId;
+  trackByMovement = (_: number, item: StockMovement) => item.id;
+
   activeTab = signal<'stock' | 'history'>('stock');
   stock = signal<InventoryItem[]>([]);
   movements = signal<StockMovement[]>([]);

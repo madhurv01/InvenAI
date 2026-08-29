@@ -41,7 +41,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
             </tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let s of shipments()" class="clickable-row" (click)="router.navigate(['/shipments', s.id])">
+            <tr *ngFor="let s of shipments(); trackBy: trackById" class="clickable-row" (click)="router.navigate(['/shipments', s.id])">
               <td>
                 <strong>{{ s.orderNumber }}</strong>
                 <div class="package-tag" *ngIf="s.packageOrderNumber">📦 {{ s.packageOrderNumber }}</div>
@@ -95,6 +95,8 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
   `]
 })
 export class ShipmentListComponent implements OnInit, OnDestroy {
+  trackById = (_: number, item: ShipmentSummary) => item.id;
+
   shipments = signal<ShipmentSummary[]>([]);
   loading = signal(true);
   errorMessage = signal('');

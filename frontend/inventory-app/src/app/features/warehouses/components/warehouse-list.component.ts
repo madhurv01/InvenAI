@@ -30,7 +30,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
             <tr><th>Name</th><th>Location</th><th>Products</th><th>Total Units</th><th>Status</th><th></th></tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let w of warehouses()">
+            <tr *ngFor="let w of warehouses(); trackBy: trackById">
               <td><strong>{{ w.name }}</strong></td>
               <td>{{ w.location || '—' }}</td>
               <td>{{ w.productCount }}</td>
@@ -101,6 +101,8 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
   `]
 })
 export class WarehouseListComponent implements OnInit {
+  trackById = (_: number, item: WarehouseManage) => item.id;
+
   warehouses = signal<WarehouseManage[]>([]);
   loading = signal(true);
   errorMessage = signal('');

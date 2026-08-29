@@ -41,7 +41,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
             </tr>
           </thead>
           <tbody class="stagger">
-            <tr *ngFor="let o of orders()" class="clickable-row" (click)="router.navigate(['/package-orders', o.id])">
+            <tr *ngFor="let o of orders(); trackBy: trackById" class="clickable-row" (click)="router.navigate(['/package-orders', o.id])">
               <td><strong>{{ o.orderNumber }}</strong></td>
               <td>{{ o.warehouseName }}</td>
               <td>{{ o.itemCount }} line(s) · {{ o.totalQuantity }} units</td>
@@ -75,6 +75,8 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
   `]
 })
 export class PackageOrderListComponent implements OnInit {
+  trackById = (_: number, item: PackageOrderSummary) => item.id;
+
   orders = signal<PackageOrderSummary[]>([]);
   loading = signal(true);
   errorMessage = signal('');

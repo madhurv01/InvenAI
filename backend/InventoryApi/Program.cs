@@ -1,9 +1,11 @@
 using System.Text;
+using System.IO.Compression;
 using InventoryApi.Data;
 using InventoryApi.Middleware;
 using InventoryApi.Services;
 using InventoryApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -15,6 +17,23 @@ var builder = WebApplication.CreateBuilder(args);
 // EF Core + Supabase PostgreSQL
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("SupabaseConnection")));
+
+// Gzip/Brotli response compression — shrinks JSON payloads (e.g. shipment routes, product
+// lists) over the wire with no behavior change; safe over HTTPS since responses aren't
+// crypto-sensitive to compression (BREACH-style attacks target reflected secrets in
+// compressed bodies, which none of this API's JSON responses contain).
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+
+// In-memory cache for rarely-changing lookup lists (categories/warehouses/suppliers) that
+// get re-fetched on almost every create/edit form across the app.
+builder.Services.AddMemoryCache();
 
 // Application services
 builder.Services.AddScoped<IProductService, ProductService>();
@@ -105,6 +124,7 @@ var app = builder.Build();
 
 // ---------------- Middleware pipeline ----------------
 
+app.UseResponseCompression();
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
